@@ -11,7 +11,6 @@ int main (int argc, char** argv){
     //Constants
     unsigned int CHAR_FREQ_NUM = 10;
 
-
     for(int textIdx = 1; textIdx < argc; textIdx++){
         //State Flags
         bool white_space_flag = false;
@@ -166,24 +165,30 @@ int main (int argc, char** argv){
         printf("Number of words:%d\n",nWords);
         printf("Number of consonants:%d\n",nConsonants);
         printf("Word Length:\n");
+        //Lines
+        printf("%-3s", "");
         for(unsigned int i = 0; i < CHAR_FREQ_NUM; i++){
-            printf("%d  ",i+1);
+            printf("%-5d",i+1);
         }
         printf("\n");
+        //CharFreq
+        printf("%-3s", "");
         for(unsigned int i = 0; i < CHAR_FREQ_NUM; i++){
-            if(i > 10) printf(" %d  ",pCharFreq[i]);
-            else printf("%d  ",pCharFreq[i]);
+            printf("%-5d",pCharFreq[i]);
         }
         printf("\n");
+        //CharFreq(%)
+        printf("%-3s", "");
         for(unsigned int i = 0; i < CHAR_FREQ_NUM; i++){
-            if(i > 10) printf(" %.1f  ",((double)pCharFreq[i] / (double)nWords) * 100);
-            else printf("%.1f  ",((double)pCharFreq[i] / (double)nWords) * 100);
+            printf("%-5.1f",((double)pCharFreq[i] / (double)nWords) * 100);
         }
         printf("\n");
 
+        //ConsonantFreq matrix
         for(unsigned int i1 = 0; i1 < CHAR_FREQ_NUM; i1++){
+            printf("%-3d", i1);
             for(int i2 = 0; i2 < 10; i2++){
-                printf("%d  ",pConsonantFreq[i1][i2]);
+                printf("%-5d",pConsonantFreq[i1][i2]);
             }
             printf("\n");
         }
