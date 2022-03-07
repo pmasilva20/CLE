@@ -39,12 +39,12 @@ int resizeConsonantFreq(int** array, int arr_size,int factor){
 
 //TODO:Consonants freqs seem wrong
 //TODO:CHAR_FREQ_NUM should be a state variable
-int problem1(char* filename, int* pNWords, int* pNCharacters, int* pNConsonants,
-            int* pCharFreq, int** pConsonantFreq){
+int problem1(char* filename, int* pNWords, int* pNVowelStartWords, int* pNConsonantEndWord){
 
     int nWords = *pNWords;
-    int nCharacters = *pNCharacters;
-    int nConsonants = *pNConsonants;
+    int nCharacters = 0;
+    int nVowelStartWords = *pNVowelStartWords;
+    int nConsonantEndWord = *pNConsonantEndWord;
 
     //State Flags
     bool white_space_flag = false;
@@ -54,6 +54,7 @@ int problem1(char* filename, int* pNWords, int* pNCharacters, int* pNConsonants,
 
     //Read files
     int character;
+    int previousCharacter = 0;
     
     FILE* pFile;
     pFile = fopen(filename,"r");
@@ -67,7 +68,6 @@ int problem1(char* filename, int* pNWords, int* pNCharacters, int* pNConsonants,
         white_space_flag = false;
         separation_flag = false;
         punctuation_flag = false;
-
 
         printf("Read from first byte:%c\n",character);
         int ones_counter = 0;
@@ -128,55 +128,38 @@ int problem1(char* filename, int* pNWords, int* pNCharacters, int* pNConsonants,
 
         if(white_space_flag || separation_flag || punctuation_flag){
             inWord = false;
-
-            //RESIZE pCharFreq
-            while(nCharacters > CHAR_FREQ_NUM){
-                printf("Resize CharFreq\n");
-                pCharFreq = realloc(pCharFreq, CHAR_FREQ_NUM * 2 * sizeof(int));
-                //Initialize to 0
-                for(int i = CHAR_FREQ_NUM; i < CHAR_FREQ_NUM*2; i++){
-                    pCharFreq[i] = 0;
-                }
-                CHAR_FREQ_NUM *=2;
-            }
-            pCharFreq[nCharacters-1]+=1;
-            pConsonantFreq[nCharacters-1][nConsonants]+=1;
-            nCharacters = 0;
-            nConsonants = 0;
             nWords+=1;
+            nCharacters = 0;
+            if(previousCharacter != 0 && checkConsonants(previousCharacter)){
+                nConsonantEndWord+=1;
+            }
         }
         else{
             inWord = true;
-            nCharacters+=1;
-            if(checkConsonants(character)){
-                nConsonants+=1;
+            if(!checkConsonants(character)){
+                if(nCharacters == 0){
+                    printf("%c",(char)character);
+                    nVowelStartWords+=1;
+                }
             }
+            nCharacters+=1;
         }
+        previousCharacter = character;
         printf("\n");
     }
     //Last word, has no way to end before EOF
     if(inWord){
-
-        //RESIZE pCharFreq
-        while(nCharacters > CHAR_FREQ_NUM){
-           
-            int old_char_freq = CHAR_FREQ_NUM;
-            printf("Resize CharFreq\n");
-            CHAR_FREQ_NUM = resizeCharFreq(pCharFreq,old_char_freq,2);
-            printf("Resize ConsonantFreq\n");
-            //resizeConsonantFreq(pConsonantFreq,old_char_freq,2);
-        }
-        pCharFreq[nCharacters-1]+=1;
-        pConsonantFreq[nCharacters-1][nConsonants]+=1;
-
         nCharacters = 0;
         nWords+=1;
+        if(checkConsonants(previousCharacter)){
+                nConsonantEndWord+=1;
+            }
     }
     fclose(pFile);
 
     *pNWords = nWords;
-    *pNCharacters = nCharacters;
-    *pNConsonants = nConsonants;
+    *pNVowelStartWords = nVowelStartWords;
+    *pNConsonantEndWord = nConsonantEndWord;
 
     return 0;
 }
@@ -185,19 +168,10 @@ int main (int argc, char** argv){
     for(int textIdx = 1; textIdx < argc; textIdx++){
         //Vars needed
         int nWords = 0;
-        int nCharacters = 0;
-        int nConsonants = 0;
-        //Array of number of words with n characters, n is index+1 of arr
-        //Start with 10, might resize
-        int* pCharFreq = (int*) calloc(CHAR_FREQ_NUM,sizeof(int));
+        int nVowelStartWords = 0;
+        int nConsonantEndWord = 0;
 
-        //Double Array of num of words of i1 length and i2 consonants, 
-        //first is length of word, second is num of consoants
-        int** pConsonantFreq = (int**) calloc(CHAR_FREQ_NUM, sizeof(int*));
-        for( int i = 0; i < CHAR_FREQ_NUM; i++){
-            pConsonantFreq[i] = (int*) calloc(10,sizeof(int));
-        }
-        int error_code = problem1(argv[textIdx],&nWords,&nCharacters,&nConsonants,pCharFreq,pConsonantFreq);
+        int error_code = problem1(argv[textIdx],&nWords,&nVowelStartWords,&nConsonantEndWord);
 
         if(error_code != 0){
             printf("Error during file processing of %s",argv[textIdx]);
@@ -206,41 +180,7 @@ int main (int argc, char** argv){
 
         printf("File %s\n",argv[textIdx]);
         printf("Number of words:%d\n",nWords);
-        printf("Number of consonants:%d\n",nConsonants);
-        printf("Word Length:\n");
-        //Lines
-        printf("%-3s", "");
-        for( int i = 0; i < CHAR_FREQ_NUM; i++){
-            printf("%-5d",i+1);
-        }
-        printf("\n");
-        //CharFreq
-        printf("%-3s", "");
-        for( int i = 0; i < CHAR_FREQ_NUM; i++){
-            printf("%-5d",pCharFreq[i]);
-        }
-        printf("\n");
-        //CharFreq(%)
-        printf("%-3s", "");
-        for( int i = 0; i < CHAR_FREQ_NUM; i++){
-            printf("%-5.1f",((double)pCharFreq[i] / (double)nWords) * 100);
-        }
-        printf("\n");
-
-        //ConsonantFreq matrix
-        for( int i1 = 0; i1 < CHAR_FREQ_NUM; i1++){
-            printf("%-3d", i1);
-            for(int i2 = 0; i2 < 10; i2++){
-                printf("%-5d",pConsonantFreq[i1][i2]);
-            }
-            printf("\n");
-        }
-
-        //Free up allocated memory
-        free(pCharFreq);
-        for(int i = 0; i < CHAR_FREQ_NUM; i++){
-            free(pConsonantFreq[i]);
-        }
-        free(pConsonantFreq);
+        printf("Number of words which start with a vowel:%d\n",nVowelStartWords);
+        printf("Number of words which end with a consonant:%d\n",nConsonantEndWord);
     }
 }

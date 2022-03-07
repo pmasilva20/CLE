@@ -68,7 +68,6 @@ int checkConsonants(int character){
     case 'i':
     case 'o':
     case 'u':
-    case 'y':
         return false;
     }
     return true;
