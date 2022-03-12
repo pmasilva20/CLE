@@ -18,9 +18,9 @@ int main(){
     //TEST 1
     char* filename1 = "test0.txt";
 
-    int q1_word_number = 9;
-    int q1_vowel_start_number = 3;
-    int q1_consonant_end_number = 5;
+    int q1_word_number = 4;
+    int q1_vowel_start_number = 2;
+    int q1_consonant_end_number = 1;
 
     //Execute prob1 main
     //Verify expected versus gotten values

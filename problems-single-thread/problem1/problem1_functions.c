@@ -3,7 +3,9 @@
 #include <wchar.h>
 #include <locale.h>
 #include <stdbool.h>
-#include "./preprocessing.h" 
+#include "./preprocessing.h"
+
+int checkUpperCase(int character);
 
 //TODO:Consonants freqs seem wrong
 int problem1(char* filename, int* pNWords, int* pNVowelStartWords, int* pNConsonantEndWord){
@@ -67,6 +69,7 @@ int problem1(char* filename, int* pNWords, int* pNVowelStartWords, int* pNConson
         if(ones_counter == 0){
             //Basic ASCII letter
             printf("ACII letter read");
+            character=checkUpperCase(character);
         }
         else{
             printf("UTF-8 encoding letter\n");
@@ -129,3 +132,4 @@ int problem1(char* filename, int* pNWords, int* pNVowelStartWords, int* pNConson
 
     return 0;
 }
+
