@@ -77,6 +77,7 @@ int problem1(char* filename, int* pNWords, int* pNVowelStartWords, int* pNConson
             character = preprocessChar(character);
             //PREPROCESSING DONE
             printf("After preprocess:%d\n",character);
+            character=checkUpperCase(character);
         }
         printf("\n");
         //Detect white space
