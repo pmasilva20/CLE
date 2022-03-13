@@ -1,1 +1,6 @@
-Á casa que os
+áàâãéèíìóòôõúùç
+ÁÀÂÃÉÈÍÌÓÒÔÕÚÙÇ
+a_word.word-word,word;word:word?word!single'word
+a_vogal_start_a
+d_consonant_end_d
+a_vogal_start_consonant_end_d

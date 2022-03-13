@@ -5,9 +5,27 @@
 #include <stdbool.h>
 #include "./preprocessing.h"
 
-int checkUpperCase(int character);
 
-//TODO:Consonants freqs seem wrong
+
+int detectBytesNeeded(int character){
+    if(character < 192){
+        return 0;
+    }
+    else if (character < 224)
+    {
+        return 2;
+    }
+    else if (character < 240)
+    {
+        return 3;
+    }
+    else
+    {
+        return 4;
+    }
+}
+
+
 int problem1(char* filename, int* pNWords, int* pNVowelStartWords, int* pNConsonantEndWord){
 
     int nWords = *pNWords;
@@ -16,9 +34,9 @@ int problem1(char* filename, int* pNWords, int* pNVowelStartWords, int* pNConson
     int nConsonantEndWord = *pNConsonantEndWord;
 
     //State Flags
-    bool white_space_flag = false;
-    bool separation_flag = false;
-    bool punctuation_flag = false;
+    bool whiteSpaceFlag = false;
+    bool separationFlag = false;
+    bool punctuationFlag = false;
     bool inWord = false;
 
     //Read files
@@ -32,90 +50,77 @@ int problem1(char* filename, int* pNWords, int* pNVowelStartWords, int* pNConson
         printf("Error reading file\n");
         return 1;
     }
-    //It's int due to EOF having more than 1 byte
+    //character is of type int due to EOF having more than 1 byte
     while( (character = getc(pFile)) != EOF){
-        white_space_flag = false;
-        separation_flag = false;
-        punctuation_flag = false;
+        whiteSpaceFlag = false;
+        separationFlag = false;
+        punctuationFlag = false;
+        //Determine how many bytes need to be read in UTF-8
+        int bytesNeeded = detectBytesNeeded(character);
 
-        printf("Read from first byte:%c\n",character);
-        int ones_counter = 0;
-
-        if(character < 192){
-            ones_counter = 0;
-        }
-        else if (character < 224)
+        char utf8Char[bytesNeeded+1];
+        for (int i = 0; i < bytesNeeded+1; i++)
         {
-            ones_counter = 2;
-        }
-        else if (character < 240)
-        {
-            ones_counter = 3;
-        }
-        else
-        {
-            ones_counter = 4;
+            utf8Char[i] = 0;
         }
         //Push first byte to most significant byte position and insert another byte read
-        for (int i = 0; i < ones_counter - 1; i++) {
+        //An array is declared so we can print to cmd utf-8 character read
+        utf8Char[0] = (char)character;
+        for (int i = 0; i < bytesNeeded - 1; i++) {
             int new_char = getc(pFile);
             if(new_char == EOF)break;
+            utf8Char[i+1] = (char)new_char;
             character = (character << 8) | new_char;
         }
-
-        //Find some way of reading utf-8
-        //printf("Actually Read:%s\n",(char*)pCharacter);
-        //printf("Read:%d ones\n",ones_counter);
-        if(ones_counter == 0){
-            //Basic ASCII letter
-            printf("ACII letter read");
-            character=checkUpperCase(character);
+        if(bytesNeeded == 0){
+            printf("Read:%c\n",utf8Char[0]);
         }
         else{
-            printf("UTF-8 encoding letter\n");
-            printf("Before:%d ",character);
-            character = preprocessChar(character);
-            //PREPROCESSING DONE
-            printf("After preprocess:%d\n",character);
-            character=checkUpperCase(character);
-        }
-        printf("\n");
-        //Detect white space
-        if(character == ' ' || character == 0x9 || character == 0xA){
-            white_space_flag = true;
-        }
-        //Detect separation symbol
-        if(character == '-' || character == '"' || character == '['
-        || character == ']' || character == '(' || character == ')'){
-            separation_flag = true;
-        }
-        //Detect punctuation symbol
-        if(character == '.' || character == ',' || character == ':' ||
-        character == ';' || character == '?' || character == '!'){
-            punctuation_flag = true;
+            printf("Read UTF-8:%s\n",utf8Char);
         }
 
-        if(white_space_flag || separation_flag || punctuation_flag){
+        //printf("Before:%d ",character);
+        character = preprocessChar(character);
+        //printf("After preprocess:%d\n",character);
+        character=checkUpperCase(character);
+        //Detect if white space
+        if(character == ' ' || character == '0x9' || character == 0xA){
+            whiteSpaceFlag = true;
+        }
+        //Detect if separation symbol
+        if(character == '-' || character == '"' || character == '['
+        || character == ']' || character == '(' || character == ')'){
+            separationFlag = true;
+        }
+        //Detect if punctuation symbol
+        if(character == '.' || character == ',' || character == ':' ||
+        character == ';' || character == '?' || character == '!'){
+            punctuationFlag = true;
+        }
+
+        if(whiteSpaceFlag || separationFlag || punctuationFlag){
             inWord = false;
             nWords+=1;
             nCharacters = 0;
             if(previousCharacter != 0 && checkConsonants(previousCharacter)){
-                printf("Consonant: %c",(char)character);
+                printf("Ending with conconant detected\n");
                 nConsonantEndWord+=1;
             }
+            //End of word detected
+            printf("End of word\n");
+            printf("\n");
         }
         else{
             inWord = true;
             if(!checkConsonants(character)){
                 if(nCharacters == 0){
-                    printf("Vogal: %c",(char)character);
+                    printf("Starting with vogal detected\n");
                     nVowelStartWords+=1;
                 }
             }
             nCharacters+=1;
         }
         previousCharacter = character;
-        printf("\n");
     }
     //Last word, has no way to end before EOF
     if(inWord){

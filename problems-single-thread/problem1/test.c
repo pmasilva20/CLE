@@ -18,9 +18,9 @@ int main(){
     //TEST 1
     char* filename1 = "test0.txt";
 
-    int q1_word_number = 4;
-    int q1_vowel_start_number = 2;
-    int q1_consonant_end_number = 1;
+    int q1WordNum = 13;
+    int q1VowelStartNum = 5;
+    int q1ConsonantEndNum = 12;
 
     //Execute prob1 main
     //Verify expected versus gotten values
@@ -34,8 +34,8 @@ int main(){
         exit(-1);
     }
     int right_asserts = 0;
-    right_asserts+= assert(nWords,q1_word_number);
-    right_asserts+= assert(nVowelStartWords,q1_vowel_start_number);
-    right_asserts+= assert(nConsonantEndWord,q1_consonant_end_number);
+    right_asserts+= assert(nWords,q1WordNum);
+    right_asserts+= assert(nVowelStartWords,q1VowelStartNum);
+    right_asserts+= assert(nConsonantEndWord,q1ConsonantEndNum);
     printf("Got %d/3 criteria right\n",right_asserts);
 }
