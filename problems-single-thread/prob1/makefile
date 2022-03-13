@@ -1,1 +1,0 @@
-gcc problem1.c preprocessing.c preprocessing.h -Wall -Wextra -Werror -O2 -std=c99 -pedantic -o output

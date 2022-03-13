@@ -68,8 +68,18 @@ int checkConsonants(int character){
     case 'i':
     case 'o':
     case 'u':
-    case 'y':
         return false;
     }
     return true;
+}
+
+int checkUpperCase(int character){
+    //If Uppercase
+    if (character >= 65 && character <= 90){
+        character = character +32;
+        return character;
+    }
+    else{
+        return  character;
+    }
 }
