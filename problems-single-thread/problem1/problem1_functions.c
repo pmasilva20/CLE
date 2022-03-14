@@ -82,9 +82,9 @@ int problem1(char* filename, int* pNWords, int* pNVowelStartWords, int* pNConson
         //printf("Before:%d ",character);
         character = preprocessChar(character);
         //printf("After preprocess:%d\n",character);
-        character=checkUpperCase(character);
+        character = checkUpperCase(character);
         //Detect if white space
-        if(character == ' ' || character == '0x9' || character == 0xA){
+        if(character == ' ' || character == 0x9 || character == 0xA){
             whiteSpaceFlag = true;
         }
         //Detect if separation symbol
@@ -99,26 +99,30 @@ int problem1(char* filename, int* pNWords, int* pNVowelStartWords, int* pNConson
         }
 
         if(whiteSpaceFlag || separationFlag || punctuationFlag){
-            inWord = false;
-            nWords+=1;
-            nCharacters = 0;
-            if(previousCharacter != 0 && checkConsonants(previousCharacter)){
-                printf("Ending with conconant detected\n");
-                nConsonantEndWord+=1;
+            if(inWord){
+                inWord = false;
+                nWords+=1;
+                nCharacters = 0;
+                if(previousCharacter != 0 && checkConsonants(previousCharacter)){
+                    printf("Ending with conconant detected %c\n",previousCharacter);
+                    nConsonantEndWord+=1;
+                }
+                //End of word detected
+                printf("End of word\n");
+                printf("\n");
             }
-            //End of word detected
-            printf("End of word\n");
-            printf("\n");
         }
         else{
-            inWord = true;
-            if(!checkConsonants(character)){
+            if(checkVowels(character)){
                 if(nCharacters == 0){
-                    printf("Starting with vogal detected\n");
+                    printf("Starting with vowel detected\n");
                     nVowelStartWords+=1;
                 }
             }
-            nCharacters+=1;
+            if(checkVowels(character) || checkConsonants(character) || character == '_'){
+                inWord = true;
+                nCharacters+=1;
+            }
         }
         previousCharacter = character;
     }

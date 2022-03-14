@@ -21,6 +21,10 @@ int preprocessChar(int character){
     else if (character >= 0xc38c && character <= 0xc38e){
             character = 'I';
     }
+    //í,ì,...
+    else if (character >= 0xc3ac && character <= 0xc3ae){
+            character = 'I';
+    }
     //Ó,Ò,...
     else if (character >= 0xc392 && character <= 0xc395){
             character = 'O';
@@ -42,7 +46,7 @@ int preprocessChar(int character){
             character = 'C';
     }
     //All types of dash -> hyphen
-    else if(character >= 0xe28090  && character <= 0xe28094){
+    else if(character >= 0xe28090  && character <= 0xe28095){
         character = '-';
     }
     //Left and Right double quotation marks
@@ -60,7 +64,7 @@ int preprocessChar(int character){
     return character;
 }
 
-int checkConsonants(int character){
+int checkVowels(int character){
     switch (character)
     {
     case 'a':
@@ -68,10 +72,18 @@ int checkConsonants(int character){
     case 'i':
     case 'o':
     case 'u':
-        return false;
+        return true;
     }
-    return true;
+    return false;
 }
+
+int checkConsonants(int character){
+    if(!checkVowels(character) && character >= 'a' && character <= 'z'){
+        return true;
+    }
+    return false;
+}
+
 
 int checkUpperCase(int character){
     //If Uppercase

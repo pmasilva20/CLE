@@ -20,9 +20,10 @@ int main (int argc, char** argv){
             continue;
         }
 
-        printf("File %s\n",argv[textIdx]);
-        printf("Number of words:%d\n",nWords);
-        printf("Number of words which start with a vowel:%d\n",nVowelStartWords);
-        printf("Number of words which end with a consonant:%d\n",nConsonantEndWord);
+        printf("File name: %s\n",argv[textIdx]);
+        printf("Total number of words = %d\n",nWords);
+        printf("N. of words beginning with a vowel = %d\n",nVowelStartWords);
+        printf("N. of words ending with a consonant = %d\n",nConsonantEndWord);
+        printf("\n");
     }
 }
