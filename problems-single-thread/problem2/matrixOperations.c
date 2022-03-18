@@ -9,8 +9,6 @@ int readMatrixFile(char* filename) {
     int orderMatrices;
 
 
-    //int previousCharacter = 0;
-
     FILE* pFile;
     pFile = fopen(filename,"r");
 
@@ -25,20 +23,25 @@ int readMatrixFile(char* filename) {
     printf("Number of Matrices %d\n",numberMatrices);
     printf("Order of the Matrices %d\n",orderMatrices);
 
-
-    for (int i = 0; i < 2 - 1; i++) {
+    for (int i = 0; i < numberMatrices - 1; i++) {
         double  matrix[orderMatrices*orderMatrices];
         fread(matrix, sizeof(double), 2, pFile);
-        for(int a=0; a<orderMatrices; a++) {
+        for(int a=0; a<orderMatrices*orderMatrices; a++) {
             printf("%f \n", matrix[a]);
         }
+        printf("\n");
+
     }
+
     fclose (pFile);
 
-    /*while( (matrix = getc(pFile)) != EOF){
+}
 
+int gaussianElimination(double matrix[]){
+    //TODO: Função para transformar a generic square matrix of order n into an equivalent upper triangular matrix
+}
 
-    }*/
-    //return 0;
+int calculateMatrixDeterminant(double matrix[]){
+    //TODO: Função calcular determinante de matrix upper triangular
 }
 

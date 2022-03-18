@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "./matrixOperations.h"
 int main(int argc, char** argv) {
-    printf("asdasdas");
     for(int textIdx = 1; textIdx < argc; textIdx++){
 
         int error_code = readMatrixFile(argv[textIdx]);
