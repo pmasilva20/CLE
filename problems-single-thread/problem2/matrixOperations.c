@@ -28,6 +28,36 @@ void printMatrix(int size, double matrix[size][size]){
     }
 }
 
+double gaussianElimination(int orderMatrix,double matrix[orderMatrix][orderMatrix]){
+    //Função para transformar a generic square matrix of order n into an equivalent upper triangular matrix
+    //TODO: Verificar a função e talvez adicionar verificação se a matrix já é upper triangular
+    int i,j,k;
+    for(i=0;i<orderMatrix-1;i++){
+        //Begin Gauss Elimination
+        for(k=i+1;k<orderMatrix;k++){
+            double  term=matrix[k][i]/matrix[i][i];
+            for(j=0;j<orderMatrix;j++){
+                matrix[k][j]=matrix[k][j]-term*matrix[i][j];
+            }
+        }
+    }
+
+}
+
+double calculateMatrixDeterminant(int size,double matrix[size][size]){
+    //TODO: Função calcular determinante de matrix upper triangular (adicionar verificação all 0)
+
+    // if all coefficients ai j = 0, for j > i, the procedure comes to an end and the value of the determinant is zero
+    // else Gaussian elimination and calculos
+
+    double determinant=matrix[0][0];
+
+    for (int x = 1; x < size; x++){
+        determinant= determinant * matrix[x][x];
+    }
+    return determinant;
+
+}
 
 int readMatrixFile(char* filename) {
 
@@ -53,18 +83,24 @@ int readMatrixFile(char* filename) {
     printf("Order of the Matrices %d\n",orderMatrices);
 
     for (int i = 0; i < numberMatrices - 1; i++) {
+
         double  arrayCoefficients[orderMatrices*orderMatrices];
 
+        double matrixDeterminant;
         double matrix[orderMatrices][orderMatrices];
 
-        fread(arrayCoefficients, sizeof(double), 2, pFile);
+        fread(&arrayCoefficients, sizeof(double), orderMatrices*orderMatrices, pFile);
 
         //arrayCoefficients to Matrix format
         arrayToMatrix(orderMatrices,arrayCoefficients,matrix);
 
-        printMatrix(orderMatrices,matrix);
+        gaussianElimination(orderMatrices,matrix);
 
-        printf("\n");
+        matrixDeterminant=calculateMatrixDeterminant(orderMatrices,matrix);
+
+        //printMatrix(orderMatrices,matrix);
+        printf("Matrix Determinant: %f\n",matrixDeterminant);
+
 
     }
 
@@ -72,37 +108,9 @@ int readMatrixFile(char* filename) {
 
 }
 
-double gaussianElimination(int orderMatrix,int matrix[orderMatrix][orderMatrix]){
-    //TODO: Função para transformar a generic square matrix of order n into an equivalent upper triangular matrix
-    int i,j,k;
-    for(i=0;i<orderMatrix-1;i++){
-        //Partial Pivoting
-        for(k=i+1;k<orderMatrix;k++){
-            //If diagonal element(absolute vallue) is smaller than any of the terms below it
-            if(fabs(matrix[i][i])<fabs(matrix[k][i])){
-                //Swap the rows
-                for(j=0;j<orderMatrix;j++){
-                    double temp;
-                    temp=matrix[i][j];
-                    matrix[i][j]=matrix[k][j];
-                    matrix[k][j]=temp;
-                }
-            }
-        }
-        //Begin Gauss Elimination
-        for(k=i+1;k<orderMatrix;k++){
-            double  term=matrix[k][i]/ matrix[i][i];
-            for(j=0;j<orderMatrix;j++){
-                matrix[k][j]=matrix[k][j]-term*matrix[i][j];
-            }
-        }
-    }
 
-}
 
-int calculateMatrixDeterminant(int size,double matrix[size][size]){
-    //TODO: Função calcular determinante de matrix upper triangular
-}
+
 
 
 
