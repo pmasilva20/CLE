@@ -101,10 +101,11 @@ int readMatrixFile(char* filename) {
 
         double matrix[orderMatrices][orderMatrices];
 
-        fread(&arrayCoefficients, sizeof(double), orderMatrices*orderMatrices, pFile);
+        fread(&matrix, sizeof(double), orderMatrices*orderMatrices, pFile);
 
         //arrayCoefficients to Matrix format
-        arrayToMatrix(orderMatrices,arrayCoefficients,matrix);
+
+        //arrayToMatrix(orderMatrices,arrayCoefficients,matrix);
 
         gaussianElimination(orderMatrices,matrix);
 

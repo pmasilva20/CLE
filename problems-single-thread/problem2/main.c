@@ -3,23 +3,7 @@
 
 
 int main(int argc, char** argv) {
-    /*
-    double disp[3][3] = {
-            {1, 2, 3},
-            {4, 5, 6},
-            {3,2,1}};
-);
 
-
-    gaussianElimination(3,disp);
-
-    double h=calculateMatrixDeterminant(3,disp);
-
-    printf("value %f\n",h);
-
-    printMatrix(3,disp);
-
-    */
     for(int textIdx = 1; textIdx < argc; textIdx++){
 
         int error_code = readMatrixFile(argv[textIdx]);
