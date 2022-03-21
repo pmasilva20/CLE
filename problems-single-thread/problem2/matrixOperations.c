@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 #include<math.h>
-
+#include "time.h"
 
 
 double arrayToMatrix(int size,double arrayCoefficients[size*size],double matrix[size][size]){
@@ -53,7 +53,7 @@ double calculateMatrixDeterminant(int size,double matrix[size][size]){
     double determinant=matrix[0][0];
 
     for (int x = 1; x < size; x++){
-        determinant= determinant * matrix[x][x];
+        determinant*= matrix[x][x];
     }
     return determinant;
 
@@ -62,6 +62,12 @@ double calculateMatrixDeterminant(int size,double matrix[size][size]){
 int readMatrixFile(char* filename) {
 
     //Read files
+
+    //Time Variables
+    double t0,t1,t2;
+    t2=0.0;
+    /*open the file and read the number and the order of matrices to be processed*/
+
 
     double *matrixCoefficients;
     int numberMatrices;
@@ -82,12 +88,17 @@ int readMatrixFile(char* filename) {
     printf("Number of Matrices %d\n",numberMatrices);
     printf("Order of the Matrices %d\n",orderMatrices);
     printf("\n");
+
     for (int i = 0; i < numberMatrices; i++) {
+
+        t0=((double) clock()) / CLOCKS_PER_SEC;
+
         printf("Processing matrix %d\n",i+1);
 
         double  arrayCoefficients[orderMatrices*orderMatrices];
 
         double matrixDeterminant;
+
         double matrix[orderMatrices][orderMatrices];
 
         fread(&arrayCoefficients, sizeof(double), orderMatrices*orderMatrices, pFile);
@@ -99,12 +110,19 @@ int readMatrixFile(char* filename) {
 
         matrixDeterminant=calculateMatrixDeterminant(orderMatrices,matrix);
 
-        //printMatrix(orderMatrices,matrix);
+        t1=((double) clock()) / CLOCKS_PER_SEC;
+
+        t2+=t1-t0;
+
         printf("The determinant is %.3e\n",matrixDeterminant);
 
     }
 
+    printf("\nElapsed time = %.6f s\n",t2);
+
     fclose (pFile);
+
+
 
 }
 
