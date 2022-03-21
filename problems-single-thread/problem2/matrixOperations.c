@@ -81,8 +81,9 @@ int readMatrixFile(char* filename) {
 
     printf("Number of Matrices %d\n",numberMatrices);
     printf("Order of the Matrices %d\n",orderMatrices);
-
-    for (int i = 0; i < numberMatrices - 1; i++) {
+    printf("\n");
+    for (int i = 0; i < numberMatrices; i++) {
+        printf("Processing matrix %d\n",i+1);
 
         double  arrayCoefficients[orderMatrices*orderMatrices];
 
@@ -99,8 +100,7 @@ int readMatrixFile(char* filename) {
         matrixDeterminant=calculateMatrixDeterminant(orderMatrices,matrix);
 
         //printMatrix(orderMatrices,matrix);
-        printf("Matrix Determinant: %f\n",matrixDeterminant);
-
+        printf("The determinant is %.3e\n",matrixDeterminant);
 
     }
 
