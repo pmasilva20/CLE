@@ -85,8 +85,8 @@ int readMatrixFile(char* filename) {
     fread(&orderMatrices, sizeof(int), 1, pFile);
 
 
-    printf("Number of Matrices %d\n",numberMatrices);
-    printf("Order of the Matrices %d\n",orderMatrices);
+    printf("Number of Matrices to be read  = %d\n",numberMatrices);
+    printf("Matrices order = %d\n",orderMatrices);
     printf("\n");
 
     for (int i = 0; i < numberMatrices; i++) {
