@@ -50,11 +50,12 @@ int problem1(char* filename, int* pNWords, int* pNVowelStartWords, int* pNConson
         printf("Error reading file\n");
         return 1;
     }
-    //character is of type int due to EOF having more than 1 byte
+    //Character is of type int due to EOF having more than 1 byte
     while( (character = getc(pFile)) != EOF){
         whiteSpaceFlag = false;
         separationFlag = false;
         punctuationFlag = false;
+        
         //Determine how many bytes need to be read in UTF-8
         int bytesNeeded = detectBytesNeeded(character);
 
@@ -83,6 +84,10 @@ int problem1(char* filename, int* pNWords, int* pNVowelStartWords, int* pNConson
         character = preprocessChar(character);
         //printf("After preprocess:%d\n",character);
         character = checkUpperCase(character);
+
+    
+
+
         //Detect if white space
         if(character == ' ' || character == 0x9 || character == 0xA){
             whiteSpaceFlag = true;
@@ -126,6 +131,7 @@ int problem1(char* filename, int* pNWords, int* pNVowelStartWords, int* pNConson
         }
         previousCharacter = character;
     }
+    previousCharacter = character;
     //Last word, has no way to end before EOF
     if(inWord){
         nCharacters = 0;
