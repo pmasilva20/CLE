@@ -3,4 +3,4 @@ project(problem2 C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(problem2 main.c matrixOperations.c)
+add_executable(problem2 main.c problem2Operations.c)

@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "./matrixOperations.h"
+#include "./problem2Operations.h"
 #include <stdlib.h>
 #include <libgen.h>
 #include <unistd.h>
@@ -10,7 +10,6 @@ static void printUsage(char *cmdName);
 int main(int argc, char** argv) {
     int opt; /* selected option */
     char *fName = "no name"; /* file name (initialized to "no name" by default) */
-    int vale = -1; /* numeric value (initialized to -1 by default) */
     opterr = 0;
     do {
         switch ((opt = getopt(argc, argv, "f:n:h"))) {
@@ -47,7 +46,8 @@ int main(int argc, char** argv) {
         printUsage (basename (argv[0]));
         return EXIT_FAILURE;
     }
-    int error_code = readMatrixFile(fName);
+
+    int error_code = processMatricesFile(fName);
 
     if (error_code != 0) {
         printf("Error during file processing of %s", fName);
@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
 
 static void printUsage (char *cmdName)
 {
-    fprintf (stderr, "\nSynopsis: %s OPTIONS [filename / positive number]\n"
+    fprintf (stderr, "\nSynopsis: %s OPTIONS [filename]\n"
                      " OPTIONS:\n"
                      " -h --- print this help\n"
                      " -f --- filename\n"

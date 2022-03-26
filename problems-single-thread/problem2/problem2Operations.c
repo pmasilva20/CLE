@@ -45,8 +45,6 @@ double gaussianElimination(int orderMatrix,double matrix[orderMatrix][orderMatri
 }
 
 double calculateMatrixDeterminant(int size,double matrix[size][size]){
-    //TODO: Função calcular determinante de matrix upper triangular (adicionar verificação all 0)
-
     // if all coefficients ai j = 0, for j > i, the procedure comes to an end and the value of the determinant is zero
     // else Gaussian elimination and calculos
 
@@ -59,7 +57,7 @@ double calculateMatrixDeterminant(int size,double matrix[size][size]){
 
 }
 
-int readMatrixFile(char* filename) {
+int processMatricesFile(char* filename) {
 
     //Read files
 
