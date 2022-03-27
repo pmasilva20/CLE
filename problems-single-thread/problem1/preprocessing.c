@@ -83,15 +83,3 @@ int checkConsonants(int character){
     }
     return false;
 }
-
-
-int checkUpperCase(int character){
-    //If Uppercase
-    if (character >= 65 && character <= 90){
-        character = character +32;
-        return character;
-    }
-    else{
-        return  character;
-    }
-}
