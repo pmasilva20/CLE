@@ -35,6 +35,12 @@ extern int statusCons[N];
 /** \brief storage region */
 static unsigned int mem[K];
 
+/** Matrices storage region */
+static struct Matrix matrix_mem[256];
+
+static struct File file_mem[256];
+
+
 /** \brief insertion pointer */
 static unsigned int ii;
 
