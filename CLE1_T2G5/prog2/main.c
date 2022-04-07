@@ -4,10 +4,12 @@
 #include <libgen.h>
 #include <unistd.h>
 #include <string.h>
-
+#include "structures.h"
 static void printUsage(char *cmdName);
 
 int main(int argc, char** argv) {
+
+
     int opt; /* selected option */
     char *fName = "no name"; /* file name (initialized to "no name" by default) */
     opterr = 0;
