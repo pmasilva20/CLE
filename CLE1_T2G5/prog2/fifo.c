@@ -38,11 +38,14 @@ static unsigned int mem[K];
 /** Matrices storage region */
 static struct Matrix matrix_mem[256];
 
-static struct File file_mem[256];
+static struct File_matrices file_mem[256];
 
 
 /** \brief insertion pointer */
 static unsigned int ii;
+
+/** \brief insertion pointer for file_mem */
+static unsigned int  ii_fileInfo;
 
 /** \brief retrieval pointer */
 static unsigned int ri;
@@ -86,6 +89,12 @@ static void initialization (void)
  *  \param prodId producer identification
  *  \param val value to be stored
  */
+
+void putFileInfo(struct File_matrices file_info){
+    file_mem[ii_fileInfo] = file_info;                                                                          /* store value in the FIFO */
+    ii_fileInfo = ii_fileInfo + 1;
+}
+
 
 void putVal (unsigned int prodId, unsigned int val)
 {

@@ -28,6 +28,7 @@ void printMatrix(int size, double matrix[size][size]){
     }
 }
 
+/*
 double gaussianElimination(int orderMatrix,double matrix[orderMatrix][orderMatrix]){
     //Função para transformar a generic square matrix of order n into an equivalent upper triangular matrix
     //TODO: Verificar a função e talvez adicionar verificação se a matrix já é upper triangular
@@ -56,7 +57,7 @@ double calculateMatrixDeterminant(int size,double matrix[size][size]){
     return determinant;
 
 }
-
+*/
 int processMatricesFile(char* filename) {
 
     //Read files
@@ -105,9 +106,9 @@ int processMatricesFile(char* filename) {
 
         //arrayToMatrix(orderMatrices,arrayCoefficients,matrix);
 
-        gaussianElimination(orderMatrices,matrix);
+        //gaussianElimination(orderMatrices,matrix);
 
-        matrixDeterminant=calculateMatrixDeterminant(orderMatrices,matrix);
+        matrixDeterminant=//calculateMatrixDeterminant(orderMatrices,matrix);
 
         t1=((double) clock()) / CLOCKS_PER_SEC;
 
@@ -124,6 +125,7 @@ int processMatricesFile(char* filename) {
 
 
 }
+
 
 
 

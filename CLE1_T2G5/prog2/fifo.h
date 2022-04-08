@@ -19,6 +19,8 @@
 #ifndef FIFO_H
 #define FIFO_H
 
+#include "structures.h"
+
 /**
  *  \brief Store a value in the data transfer region.
  *
@@ -41,5 +43,9 @@ extern void putVal (unsigned int prodId, unsigned int val);
  */
 
 extern unsigned int getVal (unsigned int consId);
+
+
+
+extern void putFileInfo(struct File_matrices file_info);
 
 #endif /* FIFO_H */
