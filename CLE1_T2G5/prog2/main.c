@@ -8,6 +8,8 @@
 #include "structures.h"
 #include <pthread.h>
 #include "probConst.h"
+#include<math.h>
+
 
 //TODO: Não a funcionar externa
 double calculateMatrixDeterminant(int size,double matrix[size][size]){
@@ -40,11 +42,15 @@ double gaussianElimination(int orderMatrix,double matrix[orderMatrix][orderMatri
 
 static void printUsage(char *cmdName);
 
+/** \brief worker life cycle routine */
+static void *worker (void *id);
+
+
 /** \brief producer threads return status array */
-int statusProd[2];
+int statusProd[N];
 
 /** \brief consumer threads return status array */
-int statusCons[2];
+int statusCons[N];
 
 
 /** File ID*/
@@ -53,10 +59,22 @@ int fileid=0;
 
 int main(int argc, char** argv) {
 
+    pthread_t tIdWorkers[N];
+
+    unsigned int works[N];                                             /* consumers application defined thread id array */     /* counting variable */
+    int *status_p;
+    int  i; /* pointer to execution status */
+
+    for (i = 0; i < N; i++)
+        works[i] = i;
+
+    srandom ((unsigned int) getpid ());
+
 
     int opt; /* selected option */
     char *fName = "no name"; /* file name (initialized to "no name" by default) */
     opterr = 0;
+
     do {
         switch ((opt = getopt(argc, argv, "f:n:h"))) {
             case 'f': /* file name */
@@ -87,6 +105,7 @@ int main(int argc, char** argv) {
             continue;
         }
     }*/
+
     if (argc == 1){
         fprintf (stderr, "%s: invalid format\n", basename (argv[0]));
         printUsage (basename (argv[0]));
@@ -94,6 +113,13 @@ int main(int argc, char** argv) {
     }
 
     //TODO: Inicializar Workers
+    for (i = 0; i < N; i++)
+        printf("Thread Created!\n");
+    if (pthread_create (&tIdWorkers[i], NULL, worker, &works[i]) != 0)                             /* thread consumer */
+    { perror ("error on creating thread consumer");
+        exit (EXIT_FAILURE);
+    }
+
 
 
 
@@ -126,6 +152,7 @@ int main(int argc, char** argv) {
     putFileInfo(file_info);
 
     for (int i = 0; i < numberMatrices; i++) {
+
         double matrixDeterminant;
 
         struct Matrix matrix1;
@@ -133,26 +160,32 @@ int main(int argc, char** argv) {
         matrix1.id=i;
         matrix1.orderMatrix=orderMatrices;
 
-
-
         fread(&matrix1.matrix, sizeof(double), orderMatrices*orderMatrices, pFile);
 
+        putMatrixVal(matrix1);
 
-        gaussianElimination(orderMatrices,matrix1.matrix);
-        matrixDeterminant=calculateMatrixDeterminant(orderMatrices,matrix1.matrix);
+        //gaussianElimination(orderMatrices,matrix1.matrix);
+        //matrixDeterminant=calculateMatrixDeterminant(orderMatrices,matrix1.matrix);
 
-        printf("The determinant is %.3e\n",matrixDeterminant);
+        //printf("The determinant is %.3e\n",matrixDeterminant);
 
     };
-
-
-
 
     fileid++;
 
     // TODO: Worker a trabalhar
 
     // TODO: Imprimir os resultados após terminação dos Workers
+
+
+    for (i = 0; i < N; i++)
+    { if (pthread_join (tIdWorkers[i], (void *) &status_p) != 0)
+        { perror ("error on waiting for thread producer");
+            exit (EXIT_FAILURE);
+        }
+        printf ("thread producer, with id %u, has terminated: ", i);
+        printf ("its status was %d\n", *status_p);
+    }
 
 
 
@@ -165,7 +198,22 @@ int main(int argc, char** argv) {
 
 }
 
+static void *worker (void *par)
+{
+    unsigned int id = *((unsigned int *) par);                                                          /* consumer id */
+    struct Matrix val;                                                                                /* produced value */
+    int i;/* counting variable */
+    for (i = 0; i < M; i++)
+    {
+        printf("Get Val %u \n ", id);/* do something else */
+        val = getMatrixVal (id);
+        /* retrieve a value */
+        print_matrix_details(val);
+    }
 
+    statusCons[id] = EXIT_SUCCESS;
+    pthread_exit (&statusCons[id]);
+}
 
 static void printUsage (char *cmdName)
 {

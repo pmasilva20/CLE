@@ -24,4 +24,5 @@ struct Matrix{
     double matrix[256][256];
 };
 
+
 #endif //PROG2_STRUCTURES_H

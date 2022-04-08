@@ -44,14 +44,29 @@ static struct File_matrices file_mem[256];
 /** \brief insertion pointer */
 static unsigned int ii;
 
-/** \brief insertion pointer for file_mem */
-static unsigned int  ii_fileInfo;
-
 /** \brief retrieval pointer */
 static unsigned int ri;
 
+/** \brief insertion pointer for file_mem */
+static unsigned int  ii_fileInfo;
+
+/** \brief insertion pointer for matrix_mem */
+static unsigned int  ii_matrix;
+
+/** \brief insertion pointer for matrix_mem */
+static unsigned int  ri_matrix;
+
 /** \brief flag signaling the data transfer region is full */
 static bool full;
+
+/** \brief flag signaling the data transfer region Matrix is full */
+static bool full_matrix_mem;
+
+/** \brief producers synchronization point when the data transfer region is full */
+static pthread_cond_t fifoMatrixFull;
+
+/** \brief consumers synchronization point when the data transfer region is empty */
+static pthread_cond_t fifoMatrixEmpty;
 
 /** \brief locking flag which warrants mutual exclusion inside the monitor */
 static pthread_mutex_t accessCR = PTHREAD_MUTEX_INITIALIZER;
@@ -74,11 +89,11 @@ static pthread_cond_t fifoEmpty;
 static void initialization (void)
 {
                                                                                    /* initialize FIFO in empty state */
-  ii = ri = 0;                                        /* FIFO insertion and retrieval pointers set to the same value */
-  full = false;                                                                                  /* FIFO is not full */
+  ii_matrix = ri_matrix = 0;                                        /* FIFO insertion and retrieval pointers set to the same value */
+    full_matrix_mem = false;                                                                                  /* FIFO is not full */
 
-  pthread_cond_init (&fifoFull, NULL);                                 /* initialize producers synchronization point */
-  pthread_cond_init (&fifoEmpty, NULL);                                /* initialize consumers synchronization point */
+  pthread_cond_init (&fifoMatrixFull, NULL);                                 /* initialize producers synchronization point */
+  pthread_cond_init (&fifoMatrixEmpty, NULL);                                /* initialize consumers synchronization point */
 }
 
 /**
@@ -94,6 +109,55 @@ void putFileInfo(struct File_matrices file_info){
     file_mem[ii_fileInfo] = file_info;                                                                          /* store value in the FIFO */
     ii_fileInfo = ii_fileInfo + 1;
 }
+
+void putMatrixVal(struct Matrix matrix){
+    matrix_mem[ii_matrix]= matrix;
+    //print_matrix_details(matrix_mem[ii_matrix]);
+    ii_matrix= (ii_matrix+1)%K;
+    full_matrix_mem = (ii_matrix == ri_matrix);
+    //TODO: let a consumer know that a value has been stored
+}
+
+
+
+struct Matrix getMatrixVal(unsigned int consId)
+{
+
+    struct Matrix val;
+    /* retrieved value */
+    if ((statusCons[consId] = pthread_mutex_lock (&accessCR)) != 0)                                   /* enter monitor */
+    { errno = statusCons[consId];                                                            /* save error in errno */
+        perror ("error on entering monitor(CF)");
+        statusCons[consId] = EXIT_FAILURE;
+        pthread_exit (&statusCons[consId]);
+    }
+    pthread_once (&init, initialization);                                              /* internal data initialization */
+
+    //TODO: a dar erro aqui!
+    while ((ii_matrix == ri_matrix) && !full_matrix_mem)                                           /* wait if the data transfer region is empty */
+    { if ((statusCons[consId] = pthread_cond_wait (&fifoMatrixEmpty, &accessCR)) != 0)
+        { errno = statusCons[consId];                                                          /* save error in errno */
+            perror ("error on waiting in fifoEmpty");
+            statusCons[consId] = EXIT_FAILURE;
+            pthread_exit (&statusCons[consId]);
+        }
+    }
+
+    val = matrix_mem[ri];                                                                   /* retrieve a  value from the FIFO */
+    ri_matrix = (ri_matrix + 1) % K;
+    full_matrix_mem = false;
+
+    if ((statusCons[consId] = pthread_mutex_unlock (&accessCR)) != 0)                                   /* exit monitor */
+    { errno = statusCons[consId];                                                             /* save error in errno */
+        perror ("error on exiting monitor(CF)");
+        statusCons[consId] = EXIT_FAILURE;
+        pthread_exit (&statusCons[consId]);
+    }
+
+    return val;
+}
+
+
 
 
 void putVal (unsigned int prodId, unsigned int val)
@@ -145,7 +209,7 @@ void putVal (unsigned int prodId, unsigned int val)
  *  \return value
  */
 
-unsigned int getVal (unsigned int consId)
+unsigned int getVal(unsigned int consId)
 {
   unsigned int val;                                                                               /* retrieved value */
 

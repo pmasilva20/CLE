@@ -14,10 +14,10 @@
 /* Generic parameters */
 
 /** \brief number of producers / consumers */
-#define  N           10
+#define  N           2
 
 /** \brief data transfer region nominal capacity (in number of values that can be stored) */
-#define  K            2
+#define  K            128
 
 /** \brief number of iterations of the life cycle */
 #define  M           10
