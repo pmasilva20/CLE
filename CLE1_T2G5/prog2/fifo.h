@@ -47,7 +47,7 @@ extern unsigned int getVal (unsigned int consId);
 struct Matrix getMatrixVal(unsigned int consId);
 
 extern putMatrixVal(struct Matrix matrix);
-
+extern void putResults(struct Matrix_result result);
 extern void putFileInfo(struct File_matrices file_info);
 
 #endif /* FIFO_H */

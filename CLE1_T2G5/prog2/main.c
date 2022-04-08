@@ -9,7 +9,7 @@
 #include <pthread.h>
 #include "probConst.h"
 #include<math.h>
-
+#include <time.h>
 
 //TODO: Não a funcionar externa
 double calculateMatrixDeterminant(int size,double matrix[size][size]){
@@ -210,9 +210,23 @@ static void *worker (void *par)
     for (i = 0; i < M; i++)
     {
         printf("Get Val %u \n", id);/* do something else */
+        double matrixDeterminant;
         val = getMatrixVal (id);
-        /* retrieve a value */
-        print_matrix_details(val);
+
+        gaussianElimination(val.orderMatrix,val.matrix);
+
+        matrixDeterminant=calculateMatrixDeterminant(val.orderMatrix,val.matrix);
+
+        struct Matrix_result matrix_determinant_result;
+
+        matrix_determinant_result.fileid=val.fileid;
+        matrix_determinant_result.id=val.id;
+        matrix_determinant_result.determinant=matrixDeterminant;
+
+        printf("Determinant obtained!\n");
+
+        putResults(matrix_determinant_result);
+
     }
 
     statusCons[id] = EXIT_SUCCESS;

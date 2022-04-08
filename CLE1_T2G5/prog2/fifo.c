@@ -119,8 +119,6 @@ void putMatrixVal(struct Matrix matrix){
     pthread_cond_signal (&fifoMatrixEmpty);
 }
 
-
-
 struct Matrix getMatrixVal(unsigned int consId)
 {
 
@@ -158,7 +156,18 @@ struct Matrix getMatrixVal(unsigned int consId)
     return val;
 }
 
+void putResults(struct Matrix_result result){
+    size_t arraySize = sizeof(file_mem) / sizeof(*file_mem);
+    for (int x = 0; x < arraySize; x++){
+        if(file_mem[x].id==result.id){
+            int id =result.id;
+            file_mem[x].determinant_result[id]=result;
+            printf("Result Saved!\n");
+            break;
+        }
+    }
 
+}
 
 
 void putVal (unsigned int prodId, unsigned int val)
