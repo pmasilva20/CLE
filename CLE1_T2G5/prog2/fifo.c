@@ -116,6 +116,7 @@ void putMatrixVal(struct Matrix matrix){
     ii_matrix= (ii_matrix+1)%K;
     full_matrix_mem = (ii_matrix == ri_matrix);
     //TODO: let a consumer know that a value has been stored
+    pthread_cond_signal (&fifoMatrixEmpty);
 }
 
 
@@ -143,7 +144,7 @@ struct Matrix getMatrixVal(unsigned int consId)
         }
     }
 
-    val = matrix_mem[ri];                                                                   /* retrieve a  value from the FIFO */
+    val = matrix_mem[ri_matrix];                                                                   /* retrieve a  value from the FIFO */
     ri_matrix = (ri_matrix + 1) % K;
     full_matrix_mem = false;
 

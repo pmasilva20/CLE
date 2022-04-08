@@ -114,9 +114,9 @@ int main(int argc, char** argv) {
 
     //TODO: Inicializar Workers
     for (i = 0; i < N; i++)
-        printf("Thread Created!\n");
+        printf("Thread Created %d !\n",i);
     if (pthread_create (&tIdWorkers[i], NULL, worker, &works[i]) != 0)                             /* thread consumer */
-    { perror ("error on creating thread consumer");
+    { perror ("error on creating thread worker");
         exit (EXIT_FAILURE);
     }
 
@@ -203,9 +203,13 @@ static void *worker (void *par)
     unsigned int id = *((unsigned int *) par);                                                          /* consumer id */
     struct Matrix val;                                                                                /* produced value */
     int i;/* counting variable */
+
+    if(id!=0){
+        printf("what!");
+    }
     for (i = 0; i < M; i++)
     {
-        printf("Get Val %u \n ", id);/* do something else */
+        printf("Get Val %u \n", id);/* do something else */
         val = getMatrixVal (id);
         /* retrieve a value */
         print_matrix_details(val);
