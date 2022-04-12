@@ -11,11 +11,8 @@
 #include<math.h>
 #include <time.h>
 
-//TODO: Não a funcionar externa
-double calculateMatrixDeterminant(int size,double matrix[size][size]){
-    // if all coefficients ai j = 0, for j > i, the procedure comes to an end and the value of the determinant is zero
-    // else Gaussian elimination and calculos
 
+double calculateMatrixDeterminant(int size,double matrix[size][size]){
     double determinant=matrix[0][0];
 
     for (int x = 1; x < size; x++){
@@ -24,9 +21,10 @@ double calculateMatrixDeterminant(int size,double matrix[size][size]){
     return determinant;
 
 }
+
+//TODO: Verificar se função é da forma que o professor pretende (apesar de funcionar).
 double gaussianElimination(int orderMatrix,double matrix[orderMatrix][orderMatrix]){
     //Função para transformar a generic square matrix of order n into an equivalent upper triangular matrix
-    //TODO: Verificar a função e talvez adicionar verificação se a matrix já é upper triangular
     int i,j,k;
     for(i=0;i<orderMatrix-1;i++){
         //Begin Gauss Elimination
@@ -46,11 +44,8 @@ static void printUsage(char *cmdName);
 static void *worker (void *id);
 
 
-/** \brief producer threads return status array */
-int statusProd[N];
-
 /** \brief consumer threads return status array */
-int statusCons[N];
+int statusWorks[N];
 
 
 /** File ID*/
@@ -63,9 +58,8 @@ int main(int argc, char** argv) {
 
     unsigned int works[N];                                             /* consumers application defined thread id array */     /* counting variable */
     int *status_p;
-    int  i; /* pointer to execution status */
 
-    for (i = 0; i < N; i++)
+    for (int i = 0; i < N; i++)
         works[i] = i;
 
     srandom ((unsigned int) getpid ());
@@ -113,11 +107,15 @@ int main(int argc, char** argv) {
     }
 
     //TODO: Inicializar Workers
-    for (i = 0; i < N; i++)
-        printf("Thread Created %d !\n",i);
-    if (pthread_create (&tIdWorkers[i], NULL, worker, &works[i]) != 0)                             /* thread consumer */
-    { perror ("error on creating thread worker");
-        exit (EXIT_FAILURE);
+    for (int i = 0; i < N; i++) {
+        if (pthread_create(&tIdWorkers[i], NULL, worker, &works[i]) !=0)                             /* thread consumer */
+        {
+            perror("error on creating thread worker");
+            exit(EXIT_FAILURE);
+        }
+        else{
+            printf("Thread Worker Created %d !\n", i);
+        }
     }
 
 
@@ -150,6 +148,7 @@ int main(int argc, char** argv) {
     printf("\n");
 
     putFileInfo(file_info);
+    printf("Main : File %u (%s) to Shared Region.\n",file_info.id,file_info.name);
 
     for (int i = 0; i < numberMatrices; i++) {
 
@@ -163,7 +162,7 @@ int main(int argc, char** argv) {
         fread(&matrix1.matrix, sizeof(double), orderMatrices*orderMatrices, pFile);
 
         putMatrixVal(matrix1);
-
+        printf("Main : Matrix %u to Shared Region.\n",i);
         //gaussianElimination(orderMatrices,matrix1.matrix);
         //matrixDeterminant=calculateMatrixDeterminant(orderMatrices,matrix1.matrix);
 
@@ -178,15 +177,17 @@ int main(int argc, char** argv) {
     // TODO: Imprimir os resultados após terminação dos Workers
 
 
-    for (i = 0; i < N; i++)
+    for (int i = 0; i < 2; i++)
     { if (pthread_join (tIdWorkers[i], (void *) &status_p) != 0)
-        { perror ("error on waiting for thread producer");
+        {
+            fprintf(stderr, "Worker %u : error on waiting for thread producer ",i);
+            perror("");
             exit (EXIT_FAILURE);
         }
-        printf ("thread producer, with id %u, has terminated: ", i);
-        printf ("its status was %d\n", *status_p);
+        printf ("Worker %u : has terminated with status: %d \n", i, *status_p);
     }
 
+    getResults();
 
 
     /*int error_code = processMatricesFile(fName);
@@ -204,14 +205,13 @@ static void *worker (void *par)
     struct Matrix val;                                                                                /* produced value */
     int i;/* counting variable */
 
-    if(id!=0){
-        printf("what!");
-    }
-    for (i = 0; i < M; i++)
+    for (i = 0; i < N; i++)
     {
-        printf("Get Val %u \n", id);/* do something else */
         double matrixDeterminant;
+
         val = getMatrixVal (id);
+
+        printf("Worker %u : Obtained Matrix.\n",id);
 
         gaussianElimination(val.orderMatrix,val.matrix);
 
@@ -220,17 +220,20 @@ static void *worker (void *par)
         struct Matrix_result matrix_determinant_result;
 
         matrix_determinant_result.fileid=val.fileid;
+
         matrix_determinant_result.id=val.id;
+
         matrix_determinant_result.determinant=matrixDeterminant;
 
-        printf("Determinant obtained!\n");
+        printf("Worker %u : Determinant Calculated.\n",id);
 
-        putResults(matrix_determinant_result);
+        putResults(matrix_determinant_result,id);
 
+        printf("Worker %u :  Saved Results obtained.\n",id);
     }
 
-    statusCons[id] = EXIT_SUCCESS;
-    pthread_exit (&statusCons[id]);
+    statusWorks[id] = EXIT_SUCCESS;
+    pthread_exit (&statusWorks[id]);
 }
 
 static void printUsage (char *cmdName)

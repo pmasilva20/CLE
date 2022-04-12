@@ -30,7 +30,7 @@
  *  \param val value to be stored
  */
 
-extern void putVal (unsigned int prodId, unsigned int val);
+//extern void putVal (unsigned int prodId, unsigned int val);
 
 /**
  *  \brief Get a value from the data transfer region.
@@ -42,12 +42,12 @@ extern void putVal (unsigned int prodId, unsigned int val);
  *  \return value
  */
 
-extern unsigned int getVal (unsigned int consId);
+//extern unsigned int getVal (unsigned int consId);
 
 struct Matrix getMatrixVal(unsigned int consId);
 
 extern putMatrixVal(struct Matrix matrix);
-extern void putResults(struct Matrix_result result);
+extern void putResults(struct Matrix_result result,unsigned int consId);
 extern void putFileInfo(struct File_matrices file_info);
-
+extern void getResults();
 #endif /* FIFO_H */

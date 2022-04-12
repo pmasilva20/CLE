@@ -14,7 +14,7 @@
 /* Generic parameters */
 
 /** \brief number of producers / consumers */
-#define  N           2
+#define  N           4
 
 /** \brief data transfer region nominal capacity (in number of values that can be stored) */
 #define  K            128
