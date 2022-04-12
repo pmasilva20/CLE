@@ -26,12 +26,11 @@
 #include "probConst.h"
 #include "structures.h"
 
-/** \brief producer threads return status array */
-extern int statusProd[N];
 
 /** \brief consumer threads return status array */
 extern int statusWorks[N];
 
+extern int matrixProcessed;
 
 /** Matrices storage region */
 static struct Matrix matrix_mem[256];
@@ -135,7 +134,7 @@ struct Matrix getMatrixVal(unsigned int consId)
     val = matrix_mem[ri_matrix];                                                                   /* retrieve a  value from the FIFO */
     ri_matrix = (ri_matrix + 1) % K;
     full_matrix_mem = false;
-
+    matrixProcessed++;
     if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)                                   /* exit monitor */
     { errno = statusWorks[consId];                                                             /* save error in errno */
         perror ("error on exiting monitor(CF)");
@@ -179,9 +178,9 @@ void getResults(){
     for (int x = 0; x < arraySize; x++){
         if(x==0){
             printf("File: %s\n",file_mem[x].name);
-            for (int a = 0; a < 10; a++){
+            for (int a = 0; a < 128; a++){
                 printf("Fileid: %d\n",file_mem[x].determinant_result[a].fileid);
-                printf("Matrixid: %d\n",file_mem[x].determinant_result[a].id);
+                printf("Matrixid: %d\n",file_mem[x].determinant_result[a].id+1);
                 printf("The determinant is %.3e\n",file_mem[x].determinant_result[a].determinant);
             }
         }

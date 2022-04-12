@@ -48,6 +48,10 @@ static void *worker (void *id);
 int statusWorks[N];
 
 
+int matrixProcessed = 0;
+
+int matrixToProcess =0;
+
 /** File ID*/
 int fileid=0;
 
@@ -147,6 +151,8 @@ int main(int argc, char** argv) {
     printf("Matrices order = %d\n",orderMatrices);
     printf("\n");
 
+    matrixToProcess+=numberMatrices;
+
     putFileInfo(file_info);
     printf("Main : File %u (%s) to Shared Region.\n",file_info.id,file_info.name);
 
@@ -177,7 +183,7 @@ int main(int argc, char** argv) {
     // TODO: Imprimir os resultados após terminação dos Workers
 
 
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < N; i++)
     { if (pthread_join (tIdWorkers[i], (void *) &status_p) != 0)
         {
             fprintf(stderr, "Worker %u : error on waiting for thread producer ",i);
@@ -205,8 +211,7 @@ static void *worker (void *par)
     struct Matrix val;                                                                                /* produced value */
     int i;/* counting variable */
 
-    for (i = 0; i < N; i++)
-    {
+    do{
         double matrixDeterminant;
 
         val = getMatrixVal (id);
@@ -229,8 +234,9 @@ static void *worker (void *par)
 
         putResults(matrix_determinant_result,id);
 
-        printf("Worker %u :  Saved Results obtained.\n",id);
-    }
+        printf("Worker %u : Saved Results obtained.\n",id);
+        //printf("Worker %u : Matrix Processed: %u\n",id,matrixProcessed);
+    } while (matrixProcessed<matrixToProcess);
 
     statusWorks[id] = EXIT_SUCCESS;
     pthread_exit (&statusWorks[id]);
