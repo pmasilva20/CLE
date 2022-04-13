@@ -175,16 +175,15 @@ int main(int argc, char** argv) {
         printf("\n");
 
         matrixToProcess += numberMatrices;
-
+        file_info.determinant_result=malloc(sizeof(struct Matrix_result)*numberMatrices); //TODO: Ver onde posso libertar memória
         putFileInfo(file_info);
 
         printf("Main : File %u (%s) to Shared Region.\n", file_info.id, file_info.name);
 
         for (int i = 0; i < numberMatrices; i++) {
 
-            double matrixDeterminant;
-
             struct Matrix matrix1;
+
             matrix1.fileid = file_info.id;
             matrix1.id = i;
             matrix1.orderMatrix = orderMatrices;
@@ -192,14 +191,11 @@ int main(int argc, char** argv) {
             fread(&matrix1.matrix, sizeof(double), orderMatrices * orderMatrices, pFile);
 
             putMatrixVal(matrix1);
-            printf("Main : Matrix %u to Shared Region.\n", i);
-            //gaussianElimination(orderMatrices,matrix1.matrix);
-            //matrixDeterminant=calculateMatrixDeterminant(orderMatrices,matrix1.matrix);
 
-            //printf("The determinant is %.3e\n",matrixDeterminant);
+            printf("Main : Matrix %u to Shared Region.\n", i);
 
         };
-
+        /**File Processed **/
         filesToProcess--;
     };
     // TODO: Worker a trabalhar

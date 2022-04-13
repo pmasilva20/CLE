@@ -33,9 +33,9 @@ extern int *statusWorks;
 extern int matrixProcessed;
 
 /** Matrices storage region */
-static struct Matrix matrix_mem[256];
+static struct Matrix matrix_mem[128];
 
-static struct File_matrices file_mem[256];
+static struct File_matrices file_mem[10];
 
 
 /** \brief insertion pointer for file_mem */
@@ -62,12 +62,6 @@ static pthread_mutex_t accessCR = PTHREAD_MUTEX_INITIALIZER;
 
 /** \brief flag which warrants that the data transfer region is initialized exactly once */
 static pthread_once_t init = PTHREAD_ONCE_INIT;;
-
-/** \brief producers synchronization point when the data transfer region is full */
-static pthread_cond_t fifoFull;
-
-/** \brief consumers synchronization point when the data transfer region is empty */
-static pthread_cond_t fifoEmpty;
 
 /**
  *  \brief Initialization of the data transfer region.
@@ -99,13 +93,17 @@ void putFileInfo(struct File_matrices file_info){
     ii_fileInfo = ii_fileInfo + 1;
 }
 
-// TODO: Meter aqui monitor por causa de K e tamanho dos arrays
+// TODO: Meter aqui monitor por causa de K e tamanho dos arrays (Está a funcionar)!
 void putMatrixVal(struct Matrix matrix){
+
+    while (full_matrix_mem){
+    };
     matrix_mem[ii_matrix]= matrix;
-    //print_matrix_details(matrix_mem[ii_matrix]);
+
     ii_matrix= (ii_matrix+1)%K;
+
     full_matrix_mem = (ii_matrix == ri_matrix);
-    //TODO: let a consumer know that a value has been stored
+
     pthread_cond_signal (&fifoMatrixEmpty);
 }
 
@@ -122,7 +120,7 @@ struct Matrix getMatrixVal(unsigned int consId)
 
     pthread_once (&init, initialization);                                              /* internal data initialization */
 
-    //TODO: a dar erro aqui!
+
     while ((ii_matrix == ri_matrix) && !full_matrix_mem)                                           /* wait if the data transfer region is empty */
     { if ((statusWorks[consId] = pthread_cond_wait (&fifoMatrixEmpty, &accessCR)) != 0)
         { errno = statusWorks[consId];                                                          /* save error in errno */
@@ -136,6 +134,7 @@ struct Matrix getMatrixVal(unsigned int consId)
     ri_matrix = (ri_matrix + 1) % K;
     full_matrix_mem = false;
     matrixProcessed++;
+
     if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)                                   /* exit monitor */
     { errno = statusWorks[consId];                                                             /* save error in errno */
         perror ("error on exiting monitor(CF)");
@@ -173,7 +172,8 @@ void putResults(struct Matrix_result result,unsigned int consId){
         pthread_exit (&statusWorks[consId]);
     }
 }
-//TODO: Mallocs por causa dos sizes do array.
+//TODO: Melhorar Função dependo a quando os resultados são impressos.
+
 void getResults(){
     size_t arraySize = sizeof(file_mem) / sizeof(*file_mem);
     for (int x = 0; x < arraySize; x++){

@@ -17,14 +17,14 @@ struct Matrix_result{
 struct File_matrices{
     int id;
     char name[40];
-    struct Matrix_result determinant_result[256];
+    struct Matrix_result *determinant_result;
 };
 
 struct Matrix{
     int orderMatrix;
     int fileid;
     int id;
-    double matrix[256][256];
+    double matrix[256][256]; //TODO: Ver como fazer  aqui o malloc;
 };
 
 
