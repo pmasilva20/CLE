@@ -99,6 +99,7 @@ void putFileInfo(struct File_matrices file_info){
     ii_fileInfo = ii_fileInfo + 1;
 }
 
+// TODO: Meter aqui monitor por causa de K e tamanho dos arrays
 void putMatrixVal(struct Matrix matrix){
     matrix_mem[ii_matrix]= matrix;
     //print_matrix_details(matrix_mem[ii_matrix]);
@@ -176,7 +177,7 @@ void putResults(struct Matrix_result result,unsigned int consId){
 void getResults(){
     size_t arraySize = sizeof(file_mem) / sizeof(*file_mem);
     for (int x = 0; x < arraySize; x++){
-        if(x==0){
+        if(x==1){
             printf("File: %s\n",file_mem[x].name);
             for (int a = 0; a < 128; a++){
                 printf("Fileid: %d\n",file_mem[x].determinant_result[a].fileid);

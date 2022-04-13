@@ -40,35 +40,38 @@ double gaussianElimination(int orderMatrix,double matrix[orderMatrix][orderMatri
     }
 
 }
+
 static void printUsage(char *cmdName);
 
 /** \brief worker life cycle routine */
 static void *worker (void *id);
 
-
 /** \brief consumer threads return status array */
 int *statusWorks;
 
+/** \brief Number of Matrices processed by workers **/
 int matrixProcessed = 0;
 
+/** \brief  Number of Matrices to be processed by workers **/
 int matrixToProcess =0;
 
-/** File ID*/
-int fileid=0;
-
+/** \brief Number of Files to be processed **/
+int filesToProcess =0;
 
 int main(int argc, char** argv) {
 
 
-    /**Number of Workers**/
+    /** \brief Number of Workers **/
     int numberWorkers=0;
 
-    /** List of Files**/
-    char listFiles[10];
+    /** \brief  List of Files**/
+    char *listFiles[10];
 
+
+    /** \brief File ID */
+    int fileid=0;
 
     int opt; /* selected option */
-    char *fName = "no name"; /* file name (initialized to "no name" by default) */
     opterr = 0;
 
     do {
@@ -79,7 +82,8 @@ int main(int argc, char** argv) {
                     printUsage(basename(argv[0]));
                     return EXIT_FAILURE;
                 }
-                fName = optarg;
+                listFiles[fileid]=optarg;
+                fileid++;
                 break;
             case 't':
                 numberWorkers = atoi(optarg);
@@ -113,6 +117,10 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
+
+    /** \brief  Files To Process **/
+    filesToProcess=fileid;
+
     statusWorks = malloc(sizeof(int)*numberWorkers);
 
     pthread_t tIdWorkers[numberWorkers];
@@ -127,9 +135,7 @@ int main(int argc, char** argv) {
     srandom ((unsigned int) getpid ());
 
 
-
-
-    //TODO: Inicializar Workers
+    //Inicializar Workers
     for (int i = 0; i < numberWorkers; i++) {
         if (pthread_create(&tIdWorkers[i], NULL, worker, &works[i]) !=0)                             /* thread consumer */
         {
@@ -142,61 +148,60 @@ int main(int argc, char** argv) {
     }
 
 
+    for (int i = 0; i < fileid; i++) {
 
+        FILE *pFile;
+        pFile = fopen(listFiles[i], "r");
 
-    //TODO: Armazenar as Matrices na zona partilhada
+        if (pFile == NULL) {
+            printf("Error reading file\n");
+            return 1; //TODO: Mudar ISTO
+        }
 
-    FILE* pFile;
-    pFile = fopen(fName,"r");
+        struct File_matrices file_info;
 
-    if(pFile == NULL){
-        printf("Error reading file\n");
-        return 1;
-    }
+        int numberMatrices;
+        int orderMatrices;
 
-    struct File_matrices file_info;
+        file_info.id = i;
 
-    int numberMatrices;
-    int orderMatrices;
+        strcpy(file_info.name, listFiles[i]);
 
-    file_info.id=fileid;
+        fread(&numberMatrices, sizeof(int), 1, pFile);
+        fread(&orderMatrices, sizeof(int), 1, pFile);
 
-    strcpy(file_info.name, fName);
+        printf("Number of Matrices to be read  = %d\n", numberMatrices);
+        printf("Matrices order = %d\n", orderMatrices);
+        printf("\n");
 
-    fread(&numberMatrices, sizeof(int), 1, pFile);
-    fread(&orderMatrices, sizeof(int), 1, pFile);
+        matrixToProcess += numberMatrices;
 
-    printf("Number of Matrices to be read  = %d\n",numberMatrices);
-    printf("Matrices order = %d\n",orderMatrices);
-    printf("\n");
+        putFileInfo(file_info);
 
-    matrixToProcess+=numberMatrices;
+        printf("Main : File %u (%s) to Shared Region.\n", file_info.id, file_info.name);
 
-    putFileInfo(file_info);
-    printf("Main : File %u (%s) to Shared Region.\n",file_info.id,file_info.name);
+        for (int i = 0; i < numberMatrices; i++) {
 
-    for (int i = 0; i < numberMatrices; i++) {
+            double matrixDeterminant;
 
-        double matrixDeterminant;
+            struct Matrix matrix1;
+            matrix1.fileid = file_info.id;
+            matrix1.id = i;
+            matrix1.orderMatrix = orderMatrices;
 
-        struct Matrix matrix1;
-        matrix1.fileid=fileid;
-        matrix1.id=i;
-        matrix1.orderMatrix=orderMatrices;
+            fread(&matrix1.matrix, sizeof(double), orderMatrices * orderMatrices, pFile);
 
-        fread(&matrix1.matrix, sizeof(double), orderMatrices*orderMatrices, pFile);
+            putMatrixVal(matrix1);
+            printf("Main : Matrix %u to Shared Region.\n", i);
+            //gaussianElimination(orderMatrices,matrix1.matrix);
+            //matrixDeterminant=calculateMatrixDeterminant(orderMatrices,matrix1.matrix);
 
-        putMatrixVal(matrix1);
-        printf("Main : Matrix %u to Shared Region.\n",i);
-        //gaussianElimination(orderMatrices,matrix1.matrix);
-        //matrixDeterminant=calculateMatrixDeterminant(orderMatrices,matrix1.matrix);
+            //printf("The determinant is %.3e\n",matrixDeterminant);
 
-        //printf("The determinant is %.3e\n",matrixDeterminant);
+        };
 
+        filesToProcess--;
     };
-
-    fileid++;
-
     // TODO: Worker a trabalhar
 
     // TODO: Imprimir os resultados após terminação dos Workers
@@ -255,7 +260,7 @@ static void *worker (void *par)
 
         printf("Worker %u : Saved Results obtained.\n",id);
         //printf("Worker %u : Matrix Processed: %u\n",id,matrixProcessed);
-    } while (matrixProcessed<matrixToProcess);
+    } while ((matrixProcessed<matrixToProcess) || (filesToProcess>0));
 
     statusWorks[id] = EXIT_SUCCESS;
     pthread_exit (&statusWorks[id]);

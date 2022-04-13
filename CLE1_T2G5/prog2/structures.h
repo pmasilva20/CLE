@@ -6,6 +6,8 @@
 #ifndef PROG2_STRUCTURES_H
 #define PROG2_STRUCTURES_H
 
+//TODO: Tentar uns mallocs
+
 struct Matrix_result{
     int id;
     int fileid;
