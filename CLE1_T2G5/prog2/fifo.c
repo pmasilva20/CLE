@@ -28,7 +28,7 @@
 
 
 /** \brief consumer threads return status array */
-extern int statusWorks[N];
+extern int *statusWorks;
 
 extern int matrixProcessed;
 
