@@ -5,15 +5,81 @@
 #include <locale.h>
 #include <stdbool.h>
 #include <time.h>
+#include <libgen.h>
+#include <unistd.h>
+#include <string.h>
+
+static void printUsage (char *cmdName);
 
 
 int main (int argc, char** argv){
-
+    int opt;
+    int index;
+    int fCount = 0;
+    char* fName = "no name";
+    char* files[argc];
+    char* next;
+  
     double time0, time1, timeTotal;
 
     timeTotal = 0.0;
+  
+   // int opterr = 0;
+    do{
+        switch ((opt = getopt(argc, argv, "f:h"))) {
+            case 'f': /* file name */
+                index = optind - 1;
+                while(index < argc){
+                    next = strdup(argv[index]);
+                    index++;
+                    if(next[0] != '-'){
+                      files[fCount++] = next;  
+                    }
+                    else break;
+                }
+                break;
 
-    for(int textIdx = 1; textIdx < argc; textIdx++){
+
+                if (optarg[0] == '-') {
+                    fprintf(stderr, "%s: file name is missing\n", basename(argv[0]));
+                    printUsage(basename(argv[0]));
+                    return EXIT_FAILURE;
+                }
+                fName = optarg;
+                printf("Read %s\n",fName);
+                //int fnstart = optind - 1;
+
+
+                break;
+            case 'h' : /* help mode */
+                printUsage(basename(argv[0]));
+                return EXIT_SUCCESS;
+            case '?': /* invalid option */
+                fprintf (stderr, "%s: invalid option\n", basename (argv[0]));
+                printUsage (basename (argv[0]));
+                return EXIT_FAILURE;
+            case -1: break;
+        }
+
+    } while(opt != -1);
+
+    if (argc == 1){
+        fprintf (stderr, "%s: invalid format\n", basename (argv[0]));
+        printUsage (basename (argv[0]));
+        return EXIT_FAILURE;
+    }
+
+
+    // int error_code = processMatricesFile(fName);
+
+    // if (error_code != 0) {
+    //     printf("Error during file processing of %s", fName);
+
+    // }
+
+    // return EXIT_SUCCESS;
+
+    for(int textIdx = 0; textIdx < fCount; textIdx++){
         //Vars needed
         int nWords = 0;
         int nVowelStartWords = 0;
@@ -24,15 +90,23 @@ int main (int argc, char** argv){
         time1 = (double) clock() / CLOCKS_PER_SEC;
         timeTotal += (time1 - time0);
         if(error_code != 0){
-            printf("Error during file processing of %s",argv[textIdx]);
+            printf("Error during file processing of %s",files[textIdx]);
             continue;
         }
 
-        printf("File name: %s\n",argv[textIdx]);
-        printf("Total number of words = %d\n",nWords);
-        printf("N. of words beginning with a vowel = %d\n",nVowelStartWords);
-        printf("N. of words ending with a consonant = %d\n",nConsonantEndWord);
-        printf("\n");
+
+        printf("File %s\n",files[textIdx]);
+        printf("Number of words:%d\n",nWords);
+        printf("Number of words which start with a vowel:%d\n",nVowelStartWords);
+        printf("Number of words which end with a consonant:%d\n",nConsonantEndWord);
     }
-    printf ("Elapsed time = %.6f s\n", timeTotal);
+}
+
+static void printUsage (char *cmdName)
+{
+    fprintf (stderr, "\nSynopsis: %s OPTIONS [filename]\n"
+                     " OPTIONS:\n"
+                     " -h --- print this help\n"
+                     " -f --- filename\n"
+                     , cmdName);
 }

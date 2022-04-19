@@ -32,15 +32,6 @@ int main(int argc, char** argv) {
         }
     } while (opt != -1);
 
-    /*for(int textIdx = 1; textIdx < argc; textIdx++){
-
-        int error_code = readMatrixFile(argv[textIdx]);
-
-        if(error_code != 0){
-            printf("Error during file processing of %s",argv[textIdx]);
-            continue;
-        }
-    }*/
     if (argc == 1){
         fprintf (stderr, "%s: invalid format\n", basename (argv[0]));
         printUsage (basename (argv[0]));
