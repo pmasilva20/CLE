@@ -4,7 +4,7 @@
 #include <wchar.h>
 #include <locale.h>
 #include <stdbool.h>
-#include <stdlib.h>
+#include <time.h>
 #include <libgen.h>
 #include <unistd.h>
 #include <string.h>
@@ -19,6 +19,11 @@ int main (int argc, char** argv){
     char* fName = "no name";
     char* files[argc];
     char* next;
+  
+    double time0, time1, timeTotal;
+
+    timeTotal = 0.0;
+  
    // int opterr = 0;
     do{
         switch ((opt = getopt(argc, argv, "f:h"))) {
@@ -80,12 +85,15 @@ int main (int argc, char** argv){
         int nVowelStartWords = 0;
         int nConsonantEndWord = 0;
 
-        int error_code = problem1(files[textIdx],&nWords,&nVowelStartWords,&nConsonantEndWord);
-
+        time0 = (double) clock() / CLOCKS_PER_SEC;
+        int error_code = problem1(argv[textIdx],&nWords,&nVowelStartWords,&nConsonantEndWord);
+        time1 = (double) clock() / CLOCKS_PER_SEC;
+        timeTotal += (time1 - time0);
         if(error_code != 0){
             printf("Error during file processing of %s",files[textIdx]);
             continue;
         }
+
 
         printf("File %s\n",files[textIdx]);
         printf("Number of words:%d\n",nWords);
