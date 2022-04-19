@@ -151,9 +151,28 @@ int main(int argc, char** argv) {
             printf("Thread Worker Created %d !\n", i);
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     t0 = ((double) clock ()) / CLOCKS_PER_SEC;
     for (int i = 0; i < filesToProcess; i++) {
-
+        //Process one file
         FILE *pFile;
         pFile = fopen(listFiles[i], "r");
 
