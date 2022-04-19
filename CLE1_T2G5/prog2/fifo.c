@@ -1,21 +1,3 @@
-/**
- *  \file fifo.c (implementation file)
- *
- *  \brief Problem name: Producers / Consumers.
- *
- *  Synchronization based on monitors.
- *  Both threads and the monitor are implemented using the pthread library which enables the creation of a
- *  monitor of the Lampson / Redell type.
- *
- *  Data transfer region implemented as a monitor.
- *
- *  Definition of the operations carried out by the producers / consumers:
- *     \li putVal
- *     \li getVal.
- *
- *  \author António Rui Borges - March 2019
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -30,10 +12,11 @@
 /** \brief consumer threads return status array */
 extern int *statusWorks;
 
+/** \brief Number of matrices already processed */
 extern int matrixProcessed;
 
 /** Matrices storage region */
-static struct Matrix matrix_mem[128];
+static struct Matrix matrix_mem[128]; //TODO: Perguntar sobre o tamanho disto ao prof
 
 static struct File_matrices file_mem[10];
 
@@ -71,31 +54,23 @@ static pthread_once_t init = PTHREAD_ONCE_INIT;;
 
 static void initialization (void)
 {
-                                                                                   /* initialize FIFO in empty state */
-  ii_matrix = ri_matrix = 0;                                        /* FIFO insertion and retrieval pointers set to the same value */
-    full_matrix_mem = false;                                                                                  /* FIFO is not full */
 
-  pthread_cond_init (&fifoMatrixFull, NULL);                                 /* initialize producers synchronization point */
-  pthread_cond_init (&fifoMatrixEmpty, NULL);                                /* initialize consumers synchronization point */
+  ii_matrix = ri_matrix = 0;
+    full_matrix_mem = false;
+
+    /* initialize of synchronization points */
+  pthread_cond_init (&fifoMatrixFull, NULL);
+  pthread_cond_init (&fifoMatrixEmpty, NULL);
 }
 
-/**
- *  \brief Store a value in the data transfer region.
- *
- *  Operation carried out by the producers.
- *
- *  \param prodId producer identification
- *  \param val value to be stored
- */
 
 void putFileInfo(struct File_matrices file_info){
-    file_mem[ii_fileInfo] = file_info;                                                                          /* store value in the FIFO */
+    file_mem[ii_fileInfo] = file_info;
     ii_fileInfo = ii_fileInfo + 1;
 }
 
 // TODO: Meter aqui monitor por causa de K e tamanho dos arrays (Está a funcionar)!
 void putMatrixVal(struct Matrix matrix){
-
     while (full_matrix_mem){
     };
     matrix_mem[ii_matrix]= matrix;
@@ -111,32 +86,32 @@ struct Matrix getMatrixVal(unsigned int consId)
 {
     struct Matrix val;
     /* retrieved value */
-    if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)                                   /* enter monitor */
-    { errno = statusWorks[consId];                                                            /* save error in errno */
+    if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)
+    { errno = statusWorks[consId];
         perror ("error on entering monitor(CF)");
         statusWorks[consId] = EXIT_FAILURE;
         pthread_exit (&statusWorks[consId]);
     }
 
-    pthread_once (&init, initialization);                                              /* internal data initialization */
+    pthread_once (&init, initialization);
 
 
-    while ((ii_matrix == ri_matrix) && !full_matrix_mem)                                           /* wait if the data transfer region is empty */
+    while ((ii_matrix == ri_matrix) && !full_matrix_mem)
     { if ((statusWorks[consId] = pthread_cond_wait (&fifoMatrixEmpty, &accessCR)) != 0)
-        { errno = statusWorks[consId];                                                          /* save error in errno */
+        { errno = statusWorks[consId];
             perror ("error on waiting in fifoEmpty");
             statusWorks[consId] = EXIT_FAILURE;
             pthread_exit (&statusWorks[consId]);
         }
     }
 
-    val = matrix_mem[ri_matrix];                                                                   /* retrieve a  value from the FIFO */
+    val = matrix_mem[ri_matrix];
     ri_matrix = (ri_matrix + 1) % K;
     full_matrix_mem = false;
     matrixProcessed++;
 
-    if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)                                   /* exit monitor */
-    { errno = statusWorks[consId];                                                             /* save error in errno */
+    if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)
+    { errno = statusWorks[consId];
         perror ("error on exiting monitor(CF)");
         statusWorks[consId] = EXIT_FAILURE;
         pthread_exit (&statusWorks[consId]);
@@ -144,17 +119,17 @@ struct Matrix getMatrixVal(unsigned int consId)
 
     return val;
 }
-//TODO: Verificar Monitor aqui
+//TODO: Verificar Monitor aqui!
 void putResults(struct Matrix_result result,unsigned int consId){
 
-    if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)                                   /* enter monitor */
-    { errno = statusWorks[consId];                                                            /* save error in errno */
+    if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)
+    { errno = statusWorks[consId];
         perror ("error on entering monitor(CF)");
         statusWorks[consId] = EXIT_FAILURE;
         pthread_exit (&statusWorks[consId]);
     }
 
-    pthread_once (&init, initialization);                                              /* internal data initialization */
+    pthread_once (&init, initialization);
 
     size_t arraySize = sizeof(file_mem) / sizeof(*file_mem);
     for (int x = 0; x < arraySize; x++){
@@ -165,28 +140,22 @@ void putResults(struct Matrix_result result,unsigned int consId){
         }
     }
 
-    if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)                                   /* exit monitor */
-    { errno = statusWorks[consId];                                                             /* save error in errno */
+    if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)
+    { errno = statusWorks[consId];
         perror ("error on exiting monitor(CF)");
         statusWorks[consId] = EXIT_FAILURE;
         pthread_exit (&statusWorks[consId]);
     }
 }
-//TODO: Melhorar Função dependo a quando os resultados são impressos.
-
-void getResults(){
-    size_t arraySize = sizeof(file_mem) / sizeof(*file_mem);
-    for (int x = 0; x < arraySize; x++){
-        if(x==1){
-            printf("File: %s\n",file_mem[x].name);
-            for (int a = 0; a < 128; a++){
-                printf("Fileid: %d\n",file_mem[x].determinant_result[a].fileid);
-                printf("Matrixid: %d\n",file_mem[x].determinant_result[a].id+1);
-                printf("The determinant is %.3e\n",file_mem[x].determinant_result[a].determinant);
-            }
+//TODO: Alterar dependo de quando fazer o print.
+void getResults(int filesToProcess){
+    for (int x = 0; x < filesToProcess; x++){
+        printf("File: %s\n",file_mem[x].name);
+        for (int a = 0; a < file_mem[x].numberOfMatrices; a++){
+            printf("Matrix %d :\n",file_mem[x].determinant_result[a].id+1);
+            printf("The determinant is %.3e\n",file_mem[x].determinant_result[a].determinant);
         }
-
-        //size_t arraySize_r = sizeof(file_mem[x].determinant_result) / sizeof(*file_mem[x].determinant_result);
+        printf("\n");
     }
 }
 

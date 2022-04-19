@@ -17,6 +17,7 @@ struct Matrix_result{
 struct File_matrices{
     int id;
     char name[40];
+    int numberOfMatrices;
     struct Matrix_result *determinant_result;
 };
 

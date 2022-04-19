@@ -7,12 +7,14 @@
 #include <string.h>
 #include "structures.h"
 #include <pthread.h>
-#include "probConst.h"
-
-#include<math.h>
 #include <time.h>
 
-
+/**
+ * Calculate Matrix Determinant
+ * @param size Order of the Matrix
+ * @param matrix Matrix
+ * @return Determinant of the Matrix
+ */
 double calculateMatrixDeterminant(int size,double matrix[size][size]){
     double determinant=matrix[0][0];
 
@@ -25,6 +27,13 @@ double calculateMatrixDeterminant(int size,double matrix[size][size]){
 }
 
 //TODO: Verificar se função é da forma que o professor pretende (apesar de funcionar).
+
+/**
+ * Apply Gaussian Elimination
+ * @param orderMatrix Order of the Matrix
+ * @param matrix Matrix
+ * @return Matrix applied with Gaussian Elimination
+ */
 double gaussianElimination(int orderMatrix,double matrix[orderMatrix][orderMatrix]){
     //Função para transformar a generic square matrix of order n into an equivalent upper triangular matrix
     int i,j,k;
@@ -38,7 +47,6 @@ double gaussianElimination(int orderMatrix,double matrix[orderMatrix][orderMatri
             }
         }
     }
-
 }
 
 static void printUsage(char *cmdName);
@@ -55,18 +63,24 @@ int matrixProcessed = 0;
 /** \brief  Number of Matrices to be processed by workers **/
 int matrixToProcess =0;
 
+/** \brief Number of Files Still to be processed **/
+int filesStillToProcess =0;
+
 /** \brief Number of Files to be processed **/
 int filesToProcess =0;
 
 int main(int argc, char** argv) {
 
+    /** time limits **/
+    double t0, t1, t2;
+
+    t2 = 0.0;
 
     /** \brief Number of Workers **/
     int numberWorkers=0;
 
     /** \brief  List of Files**/
     char *listFiles[10];
-
 
     /** \brief File ID */
     int fileid=0;
@@ -99,18 +113,7 @@ int main(int argc, char** argv) {
         }
     } while (opt != -1);
 
-
-
-    /*for(int textIdx = 1; textIdx < argc; textIdx++){
-
-        int error_code = readMatrixFile(argv[textIdx]);
-
-        if(error_code != 0){
-            printf("Error during file processing of %s",argv[textIdx]);
-            continue;
-        }
-    }*/
-
+    //TODO: Talvez tirar isto
     if (argc == 1){
         fprintf (stderr, "%s: invalid format\n", basename (argv[0]));
         printUsage (basename (argv[0]));
@@ -118,7 +121,9 @@ int main(int argc, char** argv) {
     }
 
 
-    /** \brief  Files To Process **/
+    /** \brief  Files Still To Process **/
+    filesStillToProcess=fileid;
+
     filesToProcess=fileid;
 
     statusWorks = malloc(sizeof(int)*numberWorkers);
@@ -137,7 +142,7 @@ int main(int argc, char** argv) {
 
     //Inicializar Workers
     for (int i = 0; i < numberWorkers; i++) {
-        if (pthread_create(&tIdWorkers[i], NULL, worker, &works[i]) !=0)                             /* thread consumer */
+        if (pthread_create(&tIdWorkers[i], NULL, worker, &works[i]) !=0)                             /* thread worker */
         {
             perror("error on creating thread worker");
             exit(EXIT_FAILURE);
@@ -146,62 +151,62 @@ int main(int argc, char** argv) {
             printf("Thread Worker Created %d !\n", i);
         }
     }
-
-
-    for (int i = 0; i < fileid; i++) {
+    t0 = ((double) clock ()) / CLOCKS_PER_SEC;
+    for (int i = 0; i < filesToProcess; i++) {
 
         FILE *pFile;
         pFile = fopen(listFiles[i], "r");
 
         if (pFile == NULL) {
-            printf("Error reading file\n");
-            return 1; //TODO: Mudar ISTO
+            printf("Error reading File: %s\n",listFiles[i]);
         }
+        else {
 
-        struct File_matrices file_info;
+            struct File_matrices file_info;
 
-        int numberMatrices;
-        int orderMatrices;
+            int numberMatrices;
+            int orderMatrices;
 
-        file_info.id = i;
+            file_info.id = i;
 
-        strcpy(file_info.name, listFiles[i]);
+            strcpy(file_info.name, listFiles[i]);
 
-        fread(&numberMatrices, sizeof(int), 1, pFile);
-        fread(&orderMatrices, sizeof(int), 1, pFile);
+            fread(&numberMatrices, sizeof(int), 1, pFile);
+            fread(&orderMatrices, sizeof(int), 1, pFile);
 
-        printf("Number of Matrices to be read  = %d\n", numberMatrices);
-        printf("Matrices order = %d\n", orderMatrices);
-        printf("\n");
+            printf("File %u - Number of Matrices to be read  = %d\n", file_info.id, numberMatrices);
+            printf("File %u - Matrices order = %d\n", file_info.id, orderMatrices);
+            printf("\n");
 
-        matrixToProcess += numberMatrices;
-        file_info.determinant_result=malloc(sizeof(struct Matrix_result)*numberMatrices); //TODO: Ver onde posso libertar memória
-        putFileInfo(file_info);
+            file_info.numberOfMatrices=numberMatrices;
 
-        printf("Main : File %u (%s) to Shared Region.\n", file_info.id, file_info.name);
+            matrixToProcess += numberMatrices;
 
-        for (int i = 0; i < numberMatrices; i++) {
+            //TODO: Verificar onde libertar memória
+            file_info.determinant_result = malloc(sizeof(struct Matrix_result) * numberMatrices);
+            putFileInfo(file_info);
 
-            struct Matrix matrix1;
+            printf("Main : File %u (%s) to Shared Region.\n", file_info.id, file_info.name);
 
-            matrix1.fileid = file_info.id;
-            matrix1.id = i;
-            matrix1.orderMatrix = orderMatrices;
+            for (int i = 0; i < numberMatrices; i++) {
 
-            fread(&matrix1.matrix, sizeof(double), orderMatrices * orderMatrices, pFile);
+                struct Matrix matrix1;
 
-            putMatrixVal(matrix1);
+                matrix1.fileid = file_info.id;
+                matrix1.id = i;
+                matrix1.orderMatrix = orderMatrices;
 
-            printf("Main : Matrix %u to Shared Region.\n", i);
+                fread(&matrix1.matrix, sizeof(double), orderMatrices * orderMatrices, pFile);
 
-        };
-        /**File Processed **/
-        filesToProcess--;
+                putMatrixVal(matrix1);
+
+                printf("Main : Matrix %u to Shared Region.\n", i);
+
+            };
+        }
+        /** Decrease Number of Files to Process **/
+        filesStillToProcess--;
     };
-    // TODO: Worker a trabalhar
-
-    // TODO: Imprimir os resultados após terminação dos Workers
-
 
     for (int i = 0; i < numberWorkers; i++)
     { if (pthread_join (tIdWorkers[i], (void *) &status_p) != 0)
@@ -212,24 +217,20 @@ int main(int argc, char** argv) {
         }
         printf ("Worker %u : has terminated with status: %d \n", i, *status_p);
     }
-
-    getResults();
-
-
-    /*int error_code = processMatricesFile(fName);
-
-    if (error_code != 0) {
-        printf("Error during file processing of %s", fName);
-
-    }*/
-
+    t1 = ((double) clock ()) / CLOCKS_PER_SEC;
+    t2 += t1-t0;
+    /**
+     * Print Final Results
+     */
+    getResults(filesToProcess);
+    //TODO: Verficar se timings estão a ser tirados corretamente.
+    printf ("\nElapsed time = %.6f s\n", t2);
 }
 
 static void *worker (void *par)
 {
     unsigned int id = *((unsigned int *) par);                                                          /* consumer id */
     struct Matrix val;                                                                                /* produced value */
-    int i;/* counting variable */
 
     do{
         double matrixDeterminant;
@@ -255,8 +256,9 @@ static void *worker (void *par)
         putResults(matrix_determinant_result,id);
 
         printf("Worker %u : Saved Results obtained.\n",id);
-        //printf("Worker %u : Matrix Processed: %u\n",id,matrixProcessed);
-    } while ((matrixProcessed<matrixToProcess) || (filesToProcess>0));
+
+
+    } while ((matrixProcessed<matrixToProcess) || (filesStillToProcess > 0));
 
     statusWorks[id] = EXIT_SUCCESS;
     pthread_exit (&statusWorks[id]);
@@ -264,8 +266,9 @@ static void *worker (void *par)
 
 static void printUsage (char *cmdName)
 {
-    fprintf (stderr, "\nSynopsis: %s OPTIONS [filename]\n"
+    fprintf (stderr, "\nSynopsis: %s OPTIONS [filename/number]\n"
                      " OPTIONS:\n"
+                     " -t --- number of workers\n"
                      " -h --- print this help\n"
                      " -f --- filename\n"
                      , cmdName);
