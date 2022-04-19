@@ -13,6 +13,7 @@ struct File_text{
 struct Chunk_text{
     int fileId;
     int* chunk;
+    int count;
 };
 
 

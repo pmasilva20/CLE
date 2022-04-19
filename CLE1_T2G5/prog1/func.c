@@ -13,8 +13,8 @@
 #include "fifo.h"
 
 //Read file and return chunk structure or put in SH direct
+//Returns num of chunks made for file
 int makeChunks(char* filename,int fileId, int chunkSize){
-
     struct Chunk_text chunk;
 
     //State Flags
@@ -78,12 +78,9 @@ int makeChunks(char* filename,int fileId, int chunkSize){
                 if(chunkCount >= chunkSize){
                     chunk.chunk = pChunkChars;
                     chunk.fileId = fileId;
+                    chunk.count = chunkCount;
                     //TODO:Save to either an array or just put in SH directrlly
                     putChunkText(chunk);
-                    struct Chunk_text ct = getChunkText();
-                    for(int i = 0; i < chunkCount;i++){
-                        printf("%d : %d;",i,ct.chunk[i]);
-                    }
                     //Alloc mem for next chunk
                     chunkCount = 0;
                     pChunkChars = (int*) malloc(sizeof(int) * chunkSize);
@@ -103,9 +100,11 @@ int makeChunks(char* filename,int fileId, int chunkSize){
     //Read last chunk before finishing with file
     chunk.chunk = pChunkChars;
     chunk.fileId = fileId;
+    chunk.count = chunkCount;
     //TODO:Save to either an array or just put in SH directrlly
+    putChunkText(chunk);
     printf("Last\n");
 
-
     fclose(pFile);
+    return chunkCount;
 }

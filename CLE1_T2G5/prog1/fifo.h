@@ -10,6 +10,6 @@
 
 struct Chunk_text getChunkText();
 
-extern putChunkText(struct Chunk_text chunk);
+extern int putChunkText(struct Chunk_text chunk);
 
 #endif //PROG1_FIFO_H

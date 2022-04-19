@@ -9,8 +9,10 @@
 #include "structures.h"
 #include "./problem1_functions.h"
 #include "func.h"
-
-
+#include "fifo.h"
+#include "preprocessing.h"
+#include <stdbool.h>
+#include <ctype.h>
 
 
 /** \brief worker life cycle routine */
@@ -18,6 +20,9 @@ static void *worker (void *id);
 
 /** \brief consumer threads return status array */
 int *statusWorks;
+
+/** \brief Number of Chunks to be processed **/
+int chunksToProcess =0;
 
 
 static void printUsage (char *cmdName);
@@ -27,7 +32,7 @@ int main (int argc, char** argv){
     int opt;
     int index;
     int fCount = 0;
-    int numberWorkers = 1;
+    int numberWorkers = 2;
 
     char* fName = "no name";
     char* files[argc];
@@ -83,80 +88,49 @@ int main (int argc, char** argv){
     }
 
     printf("%s\n",files[0]);
-    makeChunks("../text0.txt",10,100);
+    int chunksCount = makeChunks("../text0.txt",10,20);
+    chunksToProcess += chunksCount;
 
 
-      //Make N worker threads
-//    statusWorks = malloc(sizeof(int)*numberWorkers);
-//
-//    pthread_t tIdWorkers[numberWorkers];
-//
-//    unsigned int works[numberWorkers];
-//
-//    int *status_p;
-//
-//    for (int i = 0; i < numberWorkers; i++)
-//        works[i] = i;
-//
-//    srandom ((unsigned int) getpid ());
-//
-//
-//    //Inicializar Workers
-//    for (int i = 0; i < numberWorkers; i++) {
-//        if (pthread_create(&tIdWorkers[i], NULL, worker, &works[i]) !=0)
-//        {
-//            perror("error on creating thread worker");
-//            exit(EXIT_FAILURE);
-//        }
-//        else{
-//            printf("Thread Worker Created %d !\n", i);
-//        }
-//    }
+    //Make N worker threads
+    statusWorks = malloc(sizeof(int)*numberWorkers);
+
+    pthread_t tIdWorkers[numberWorkers];
+
+    //Id's
+    unsigned int works[numberWorkers];
+
+    int *status_p;
+
+    for (int i = 0; i < numberWorkers; i++)
+        works[i] = i;
+
+    srandom ((unsigned int) getpid ());
 
 
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    //Iterate though files and do prob1
-    for(int textIdx = 0; textIdx < fCount; textIdx++){
-        //Vars needed
-        int nWords = 0;
-        int nVowelStartWords = 0;
-        int nConsonantEndWord = 0;
-
-        time0 = (double) clock() / CLOCKS_PER_SEC;
-
-        //int error_code = problem1(argv[textIdx],&nWords,&nVowelStartWords,&nConsonantEndWord);
-        
-        
-        
-        time1 = (double) clock() / CLOCKS_PER_SEC;
-        timeTotal += (time1 - time0);
-
-
-        printf("File %s\n",files[textIdx]);
-        printf("Number of words:%d\n",nWords);
-        printf("Number of words which start with a vowel:%d\n",nVowelStartWords);
-        printf("Number of words which end with a consonant:%d\n",nConsonantEndWord);
+    //Inicializar Workers
+    for (int i = 0; i < numberWorkers; i++) {
+        if (pthread_create(&tIdWorkers[i], NULL, worker, &works[i]) !=0)
+        {
+            perror("error on creating thread worker");
+            exit(EXIT_FAILURE);
+        }
+        else{
+            printf("Thread Worker Created %d !\n", i);
+        }
     }
+
+    //Join all threads and then get all results from SR
+    for(int i = 0; i < numberWorkers; i++){
+        if (pthread_join (tIdWorkers[i], (void *) &status_p) != 0){
+            perror ("error on waiting for thread producer");
+            exit (EXIT_FAILURE);
+        }
+        printf ("thread worker, with id %u, has terminated: ", i);
+        printf ("its status was %d\n", *status_p);
+    }
+
+
 }
 
 
@@ -167,46 +141,77 @@ int main (int argc, char** argv){
 static void *worker (void *par)
 {
     unsigned int id = *((unsigned int *) par);                                                          /* consumer id */
-    
+
+    printf("Soldier %d!\n",id);
     struct Chunk_text var;
 
     //while chunks to process
         //do prob1Funcs
         //save to SH
         //die
-    
-    // struct Matrix val;                                                                                /* produced value */
 
-    // do{
-    //     double matrixDeterminant;
+    do {
+        //Get chunk
+        struct Chunk_text chunk = getChunkText();
+        //Do prob1 processing
+        int nWords = 0;
+        int nVowelStartWords = 0;
+        int nConsonantEndWord = 0;
 
-    //     val = getMatrixVal (id);
+        //State Flags
+        bool inWord = false;
 
-    //     printf("Worker %u : Obtained Matrix.\n",id);
+        //Read files
+        int character;
+        int previousCharacter = 0;
 
-    //     gaussianElimination(val.orderMatrix,val.matrix);
+        for(int i = 0; i < chunk.count; i++){
+            character = chunk.chunk[i];
+            //Check if inWord
+            if(inWord){
+                //If white space or separation or punctuation simbol -> inWord is False
+                //if lastchar is consonant
+                if(checkForSpecialSymbols(character)){
+                    inWord = false;
+                    if(checkConsonants(previousCharacter)){
+                        nConsonantEndWord+=1;
+                    }
+                }
+                //If alphanumeric character or underscore or apostrophe -> nothing
+                //lastChar = character
+                if(isalnum(character) ||  character == '_' || character == '\''
+                   || character == 0xE28098 || character == 0xE28099){
+                    previousCharacter = character;
+                }
+            }
+            else{
+                //If white space or separation or punctuation simbol -> nothing
+                //If alphanumeric character or underscore or apostrophe -> inWord is True
+                //nWords += 1, checkVowel() -> nWordsBV+=1, lastChar = character
+                if(isalnum(character) ||  character == '_' || character == '\''
+                   || character == 0xE28098 || character == 0xE28099){
+                    inWord = true;
+                    nWords +=1;
+                    if(checkVowels(character)){
+                        nVowelStartWords+=1;
+                    }
+                    previousCharacter = character;
+                }
+            }
+        }
+        printf("Chunk %d\n",id);
+        printf("Nwords %d\n",nWords);
+        printf("NVowelwords %d\n",nVowelStartWords);
+        printf("NConsonantswords %d\n",nConsonantEndWord);
 
-    //     matrixDeterminant=calculateMatrixDeterminant(val.orderMatrix,val.matrix);
+        printf("Remaining chunksToProcess %d\n",chunksToProcess);
+        printf("\n");
+        chunksToProcess--;
+    } while (chunksToProcess > 0);
 
-    //     struct Matrix_result matrix_determinant_result;
-
-    //     matrix_determinant_result.fileid=val.fileid;
-
-    //     matrix_determinant_result.id=val.id;
-
-    //     matrix_determinant_result.determinant=matrixDeterminant;
-
-    //     printf("Worker %u : Determinant Calculated.\n",id);
-
-    //     putResults(matrix_determinant_result,id);
-
-    //     printf("Worker %u : Saved Results obtained.\n",id);
-
-
-    // } while ((matrixProcessed<matrixToProcess) || (filesStillToProcess > 0));
-
-    // statusWorks[id] = EXIT_SUCCESS;
-    // pthread_exit (&statusWorks[id]);
+    statusWorks[id] = EXIT_SUCCESS;
+    printUsage("Exiting\n");
+    pthread_exit (&statusWorks[id]);
 }
 
 
