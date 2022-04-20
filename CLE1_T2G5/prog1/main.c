@@ -88,6 +88,7 @@ int main (int argc, char** argv){
     }
 
     printf("%s\n",files[0]);
+    //TODO:Look at parameters
     makeChunks("../text0.txt",10,20);
 
 
@@ -107,7 +108,6 @@ int main (int argc, char** argv){
     srandom ((unsigned int) getpid ());
 
 
-    printf("Total chunks to process:%d\n",chunksToProcess);
     //Inicializar Workers
     for (int i = 0; i < numberWorkers; i++) {
         if (pthread_create(&tIdWorkers[i], NULL, worker, &works[i]) !=0)
@@ -126,15 +126,18 @@ int main (int argc, char** argv){
             perror ("error on waiting for thread producer");
             exit (EXIT_FAILURE);
         }
-        printf ("thread worker, with id %u, has terminated: ", i);
+        printf ("thread worker, with id %u, has terminated\n", i);
         printf ("its status was %d\n", *status_p);
     }
-
+    for(int i = 0; i < 1; i++){
+        struct File_text text = getFileText(10);
+        printf("File:%d\n",text.fileId);
+        printf("Words:%d\n",text.nWords);
+        printf("Vowel words:%d\n",text.nVowelStartWords);
+        printf("Consonant words:%d\n",text.nConsonantEndWord);
+    }
 
 }
-
-
-
 
 
 
@@ -143,8 +146,6 @@ static void *worker (void *par)
     unsigned int id = *((unsigned int *) par);                                                          /* consumer id */
 
     printf("Soldier %d!\n",id);
-    struct Chunk_text var;
-
     //while chunks to process
         //do prob1Funcs
         //save to SH
@@ -152,6 +153,8 @@ static void *worker (void *par)
 
     do {
         //Get chunk
+        //TODO:Temporary
+        if(getChunkCount() <= 0) break;
         struct Chunk_text chunk = getChunkText();
         //Do prob1 processing
         int nWords = 0;
@@ -199,11 +202,14 @@ static void *worker (void *par)
                 }
             }
         }
-        printf("Chunk %d\n",id);
+        printf("Chunk %d\n",chunk.fileId);
         printf("Nwords %d\n",nWords);
         printf("NVowelwords %d\n",nVowelStartWords);
         printf("NConsonantswords %d\n",nConsonantEndWord);
+        printf("\n");
 
+        //Put to fifo.c
+        putFileText(nWords, nVowelStartWords, nConsonantEndWord, chunk.fileId);
 
         printf("Me:%d Remaining chunksToProcess %d\n",id,getChunkCount());
     } while (getChunkCount() > 0);

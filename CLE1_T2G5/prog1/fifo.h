@@ -9,10 +9,9 @@
 
 
 struct Chunk_text getChunkText();
-
 extern int putChunkText(struct Chunk_text chunk);
-void putChunkCount(int count);
-void decrementChunkCount();
 int getChunkCount();
+void putFileText(int nWords, int nVowelStartWords, int nConsonantEndWord, int fileID);
+struct File_text getFileText(int fileId);
 
 #endif //PROG1_FIFO_H

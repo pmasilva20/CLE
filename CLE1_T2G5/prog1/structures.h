@@ -7,7 +7,7 @@ struct File_text{
     int nWords;
     int nVowelStartWords;
     int nConsonantEndWord;
-    int id;
+    int fileId;
 };
 
 struct Chunk_text{
