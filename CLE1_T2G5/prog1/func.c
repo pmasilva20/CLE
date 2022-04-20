@@ -64,9 +64,14 @@ int makeChunks(char* filename,int fileId, int chunkSize){
             chunkCount++;
         }
         else{
+            //TODO:look at this
             //Realloc 4 more byte of memory, we do this until word finishes
-            chunkCount++;
-            pChunkChars = realloc(pChunkChars,  chunkCount * sizeof(int));
+            printf("Reallock\n");
+            printf("%d kill %d\n",chunkCount,chunkSize);
+            chunkCount = chunkCount + 1;
+            int* newPChunkChars = realloc(pChunkChars,   chunkCount * sizeof(int));
+            pChunkChars = newPChunkChars;
+
         }
 
         //Check of word has finished, if so and chunkSize has been exceeded then we stop this chunk

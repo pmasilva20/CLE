@@ -88,8 +88,7 @@ int main (int argc, char** argv){
     }
 
     printf("%s\n",files[0]);
-    int chunksCount = makeChunks("../text0.txt",10,20);
-    chunksToProcess += chunksCount;
+    makeChunks("../text0.txt",10,20);
 
 
     //Make N worker threads
@@ -108,6 +107,7 @@ int main (int argc, char** argv){
     srandom ((unsigned int) getpid ());
 
 
+    printf("Total chunks to process:%d\n",chunksToProcess);
     //Inicializar Workers
     for (int i = 0; i < numberWorkers; i++) {
         if (pthread_create(&tIdWorkers[i], NULL, worker, &works[i]) !=0)
@@ -204,13 +204,13 @@ static void *worker (void *par)
         printf("NVowelwords %d\n",nVowelStartWords);
         printf("NConsonantswords %d\n",nConsonantEndWord);
 
-        printf("Remaining chunksToProcess %d\n",chunksToProcess);
-        printf("\n");
-        chunksToProcess--;
-    } while (chunksToProcess > 0);
+
+        printf("Me:%d Remaining chunksToProcess %d\n",id,getChunkCount());
+    } while (getChunkCount() > 0);
 
     statusWorks[id] = EXIT_SUCCESS;
-    printUsage("Exiting\n");
+    printf("Exit\n");
+    //printUsage("Exiting\n");
     pthread_exit (&statusWorks[id]);
 }
 

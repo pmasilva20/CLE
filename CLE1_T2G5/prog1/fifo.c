@@ -37,13 +37,26 @@ static pthread_once_t init = PTHREAD_ONCE_INIT;
 /** \brief locking flag which warrants mutual exclusion inside the monitor */
 static pthread_mutex_t accessCR = PTHREAD_MUTEX_INITIALIZER;
 
+static int chunkCount;
+
+
 static void initialization (void)
 {
     full_matrix_chunk = false;
     ii_chunk = 0;
     ri_chunk = 0;
+    chunkCount = 0;
     pthread_cond_init (&fifoChunkEmpty, NULL);
     pthread_cond_init (&fifoChunkFull, NULL);
+}
+
+int getChunkCount(){
+    //Enter monitor
+    pthread_mutex_lock (&accessCR);
+
+    int count = chunkCount;
+    pthread_mutex_unlock (&accessCR);
+    return count;
 }
 
 
@@ -58,6 +71,7 @@ struct Chunk_text getChunkText(){
         pthread_cond_wait (&fifoChunkEmpty, &accessCR);
     }
 
+    chunkCount--;
     chunk = chunk_mem[ri_chunk];
     ri_chunk = (ri_chunk + 1) % 100;
     full_matrix_chunk = false;
@@ -91,6 +105,7 @@ void putChunkText(struct Chunk_text chunk){
             pthread_exit (&statusProd);
         }
     };
+    chunkCount++;
     chunk_mem[ii_chunk]= chunk;
 
     ii_chunk= (ii_chunk+1)%100;

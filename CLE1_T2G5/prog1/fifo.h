@@ -11,5 +11,8 @@
 struct Chunk_text getChunkText();
 
 extern int putChunkText(struct Chunk_text chunk);
+void putChunkCount(int count);
+void decrementChunkCount();
+int getChunkCount();
 
 #endif //PROG1_FIFO_H
