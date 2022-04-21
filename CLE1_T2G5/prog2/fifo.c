@@ -15,11 +15,11 @@ extern int *statusWorks;
 /** \brief Number of matrices already processed */
 extern int matrixProcessed;
 
-/** Matrices storage region */
-static struct Matrix matrix_mem[128]; //TODO: Perguntar sobre o tamanho disto ao prof
+/** \brief Matrices storage region */
+static struct Matrix matrix_mem[K];
 
-static struct File_matrices file_mem[10];
-
+/** \brief Files storage region */
+static struct File_matrices file_mem[N];
 
 /** \brief insertion pointer for file_mem */
 static unsigned int  ii_fileInfo;
@@ -29,7 +29,6 @@ static unsigned int  ii_matrix;
 
 /** \brief insertion pointer for matrix_mem */
 static unsigned int  ri_matrix;
-
 
 /** \brief flag signaling the data transfer region Matrix is full */
 static bool full_matrix_mem;
@@ -51,7 +50,6 @@ static pthread_once_t init = PTHREAD_ONCE_INIT;;
  *
  *  Internal monitor operation.
  */
-
 static void initialization (void)
 {
 
@@ -63,16 +61,35 @@ static void initialization (void)
   pthread_cond_init (&fifoMatrixEmpty, NULL);
 }
 
-
+/**
+ *  \brief Store a File (File_matrices) value in the data transfer region.
+ *
+ *  Operation carried out by the Main.
+ *
+ *  \param val File (File_matrices) to be stored
+ */
 void putFileInfo(struct File_matrices file_info){
     file_mem[ii_fileInfo] = file_info;
     ii_fileInfo = ii_fileInfo + 1;
 }
 
-// TODO: Meter aqui monitor por causa de K e tamanho dos arrays (Está a funcionar)!
+/**
+ *  \brief Store a Matrix value in the data transfer region.
+ *
+ *  Operation carried out by the workers.
+ *
+ *  \param prodId worker identification
+ *  \param val Matrix to be stored
+ */
 void putMatrixVal(struct Matrix matrix){
+
+    pthread_mutex_lock (&accessCR);
+
+    pthread_once (&init, initialization);
+
     while (full_matrix_mem){
     };
+
     matrix_mem[ii_matrix]= matrix;
 
     ii_matrix= (ii_matrix+1)%K;
@@ -80,14 +97,27 @@ void putMatrixVal(struct Matrix matrix){
     full_matrix_mem = (ii_matrix == ri_matrix);
 
     pthread_cond_signal (&fifoMatrixEmpty);
+
+    pthread_mutex_unlock (&accessCR);
 }
 
+
+/**
+ *  \brief Get a Matrix value from the data transfer region.
+ *
+ *  Operation carried out by the workers.
+ *
+ *  \param consId worker identification
+ *
+ *  \return value
+ */
 struct Matrix getMatrixVal(unsigned int consId)
 {
     struct Matrix val;
-    /* retrieved value */
+
+
     if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)
-    { errno = statusWorks[consId];
+    {errno = statusWorks[consId];
         perror ("error on entering monitor(CF)");
         statusWorks[consId] = EXIT_FAILURE;
         pthread_exit (&statusWorks[consId]);
@@ -95,9 +125,9 @@ struct Matrix getMatrixVal(unsigned int consId)
 
     pthread_once (&init, initialization);
 
-
     while ((ii_matrix == ri_matrix) && !full_matrix_mem)
-    { if ((statusWorks[consId] = pthread_cond_wait (&fifoMatrixEmpty, &accessCR)) != 0)
+    {
+        if ((statusWorks[consId] = pthread_cond_wait (&fifoMatrixEmpty, &accessCR)) != 0)
         { errno = statusWorks[consId];
             perror ("error on waiting in fifoEmpty");
             statusWorks[consId] = EXIT_FAILURE;
@@ -120,6 +150,14 @@ struct Matrix getMatrixVal(unsigned int consId)
     return val;
 }
 //TODO: Verificar Monitor aqui!
+/**
+ *  \brief Store a Determinant value of Matrix in the data transfer region.
+ *
+ *  Operation carried out by the workers.
+ *
+ *  \param prodId worker identification
+ *  \param val Determinant value of Matrix to be stored
+ */
 void putResults(struct Matrix_result result,unsigned int consId){
 
     if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)
@@ -147,7 +185,11 @@ void putResults(struct Matrix_result result,unsigned int consId){
         pthread_exit (&statusWorks[consId]);
     }
 }
-//TODO: Alterar dependo de quando fazer o print.
+
+/**
+ * Print in the terminal the results stored in the Shared Region
+ * @param filesToProcess Number of Files
+ */
 void getResults(int filesToProcess){
     for (int x = 0; x < filesToProcess; x++){
         printf("File: %s\n",file_mem[x].name);

@@ -1,6 +1,3 @@
-//
-// Created by joaots on 07/04/22.
-//
 #include <stdio.h>
 #include "structures.h"
 #include <stdlib.h>

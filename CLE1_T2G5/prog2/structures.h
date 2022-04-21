@@ -1,12 +1,5 @@
-//
-// Created by joaots on 07/04/22.
-//
-//TODO: Ver forma de alocar melhor a memória.
-
 #ifndef PROG2_STRUCTURES_H
 #define PROG2_STRUCTURES_H
-
-//TODO: Tentar uns mallocs
 
 struct Matrix_result{
     int id;

@@ -13,14 +13,10 @@
 
 /* Generic parameters */
 
-/** \brief number of producers / consumers */
-#define  N           4
+/** \brief number of Files capacity (in number of files supported) */
+#define  N           10
 
-/** \brief data transfer region nominal capacity (in number of values that can be stored) */
+/** \brief Matrices transfer region nominal capacity (in number of Matrices that can be stored) */
 #define  K            128
-
-/** \brief number of iterations of the life cycle */
-#define  M           10
-
 
 #endif /* PROBCONST_H_ */

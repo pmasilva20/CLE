@@ -38,16 +38,15 @@ extern void putResults(struct Matrix_result result,unsigned int consId);
 /**
  *  \brief Store a File (File_matrices) value in the data transfer region.
  *
- *  Operation carried out by the workers.
+ *  Operation carried out by the Main.
  *
- *  \param prodId worker identification
  *  \param val File (File_matrices) to be stored
  */
 extern void putFileInfo(struct File_matrices file_info);
 
 /**
  *  \brief Print in the terminal the results stored in the Shared Region
- *
+ *  @param filesToProcess Number of Files
  */
 extern void getResults(int filesToProcess);
 

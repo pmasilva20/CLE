@@ -6,6 +6,7 @@
 #include "fifo.h"
 #include <string.h>
 #include "structures.h"
+#include "probConst.h"
 #include <pthread.h>
 #include <time.h>
 
@@ -58,7 +59,7 @@ static void *worker (void *id);
 int *statusWorks;
 
 /** \brief Number of Matrices processed by workers **/
-int matrixProcessed = 0;
+int  matrixProcessed = 0;
 
 /** \brief  Number of Matrices to be processed by workers **/
 int matrixToProcess =0;
@@ -80,7 +81,7 @@ int main(int argc, char** argv) {
     int numberWorkers=0;
 
     /** \brief  List of Files**/
-    char *listFiles[10];
+    char *listFiles[N];
 
     /** \brief File ID */
     int fileid=0;
@@ -124,6 +125,7 @@ int main(int argc, char** argv) {
     /** \brief  Files Still To Process **/
     filesStillToProcess=fileid;
 
+    /** \brief Files to Process */
     filesToProcess=fileid;
 
     statusWorks = malloc(sizeof(int)*numberWorkers);
@@ -217,13 +219,19 @@ int main(int argc, char** argv) {
         }
         printf ("Worker %u : has terminated with status: %d \n", i, *status_p);
     }
+
     t1 = ((double) clock ()) / CLOCKS_PER_SEC;
+
     t2 += t1-t0;
+
     /**
      * Print Final Results
      */
     getResults(filesToProcess);
-    //TODO: Verficar se timings estão a ser tirados corretamente.
+
+    /**
+     * Print Elapsed Time
+     */
     printf ("\nElapsed time = %.6f s\n", t2);
 }
 
@@ -232,8 +240,10 @@ static void *worker (void *par)
     unsigned int id = *((unsigned int *) par);                                                          /* consumer id */
     struct Matrix val;                                                                                /* produced value */
 
-    do{
+    while ((matrixProcessed<matrixToProcess) || (filesStillToProcess > 0)){
         double matrixDeterminant;
+
+        printf("Worker %u :vou tentar obter matrix com %u no fifo\n",id,matrixToProcess-matrixProcessed);
 
         val = getMatrixVal (id);
 
@@ -255,10 +265,9 @@ static void *worker (void *par)
 
         putResults(matrix_determinant_result,id);
 
-        printf("Worker %u : Saved Results obtained.\n",id);
-
-
-    } while ((matrixProcessed<matrixToProcess) || (filesStillToProcess > 0));
+        printf("Worker %u : Saved Results obtained Matrix %u.\n",id,val.id);
+        printf("MatrixProcessed - %u : Files To Process - %u\n",matrixProcessed,filesStillToProcess);
+    };
 
     statusWorks[id] = EXIT_SUCCESS;
     pthread_exit (&statusWorks[id]);
