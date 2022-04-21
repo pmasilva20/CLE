@@ -36,7 +36,7 @@ double calculateMatrixDeterminant(int size,double matrix[size][size]){
  * \param matrix Matrix
  * \return Matrix applied with Gaussian Elimination
  */
-double gaussianElimination(int orderMatrix,double matrix[orderMatrix][orderMatrix]){
+void gaussianElimination(int orderMatrix,double matrix[orderMatrix][orderMatrix]){
     //Função para transformar a generic square matrix of order n into an equivalent upper triangular matrix
     int i,j,k;
 
@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
     do {
         switch ((opt = getopt(argc, argv, ":f:t:h"))) {
             case 'f':
-                if (optarg[0] == "-") {
+                if (optarg[0] == '-') {
                     fprintf(stderr, "%s: file name is missing\n", basename(argv[0]));
                     printUsage(basename(argv[0]));
                     return EXIT_FAILURE;
@@ -187,10 +187,15 @@ int main(int argc, char** argv) {
 
             strcpy(file_info.name, listFiles[i]);
 
-            fread(&numberMatrices, sizeof(int), 1, pFile);
-            fread(&orderMatrices, sizeof(int), 1, pFile);
+            if(fread(&numberMatrices, sizeof(int), 1, pFile)!=0){
+                printf("Main: Error reading Number of Matrices\n");
+            }
 
-            printf("File %u - Number of Matrices to be read  = %d\n", file_info.id, numberMatrices);
+            if(fread(&orderMatrices, sizeof(int), 1, pFile)!=0){
+                printf("Main: Error reading Order of Matrices\n");
+            }
+
+            printf("\nFile %u - Number of Matrices to be read  = %d\n", file_info.id, numberMatrices);
             printf("File %u - Matrices order = %d\n", file_info.id, orderMatrices);
             printf("\n");
 
@@ -212,7 +217,9 @@ int main(int argc, char** argv) {
                 matrix1.id = i;
                 matrix1.orderMatrix = orderMatrices;
 
-                fread(&matrix1.matrix, sizeof(double), orderMatrices * orderMatrices, pFile);
+                if(fread(&matrix1.matrix, sizeof(double), orderMatrices * orderMatrices, pFile)!=0){
+                    printf("Main: Error reading Matrix\n");
+                }
 
                 putMatrixVal(matrix1);
 

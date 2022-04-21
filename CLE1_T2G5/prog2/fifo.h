@@ -22,7 +22,7 @@ struct Matrix getMatrixVal(unsigned int consId);
  *  \param prodId worker identification
  *  \param val Matrix to be stored
  */
-extern putMatrixVal(struct Matrix matrix);
+extern void putMatrixVal(struct Matrix matrix);
 
 /**
  *  \brief Store a Determinant value of Matrix in the data transfer region.
