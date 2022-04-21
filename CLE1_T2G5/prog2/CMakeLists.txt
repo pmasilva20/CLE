@@ -6,6 +6,6 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 
 find_package(Threads REQUIRED)
-add_executable(prog2 main.c problem2Operations.c structures.c fifo.c )
+add_executable(prog2 main.c fifo.c )
 target_link_libraries(prog2 Threads::Threads)
 target_link_libraries(prog2 m)

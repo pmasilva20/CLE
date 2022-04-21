@@ -53,7 +53,7 @@ static pthread_once_t init = PTHREAD_ONCE_INIT;;
 static void initialization (void)
 {
 
-  ii_matrix = ri_matrix = 0;
+    ii_matrix = ri_matrix = 0;
     full_matrix_mem = false;
 
     /* initialize of synchronization points */
@@ -96,7 +96,6 @@ void putMatrixVal(struct Matrix matrix){
     };
 
     matrix_mem[ii_matrix]= matrix;
-
     ii_matrix= (ii_matrix+1)%K;
 
     full_matrix_mem = (ii_matrix == ri_matrix);
@@ -108,6 +107,7 @@ void putMatrixVal(struct Matrix matrix){
     if(pthread_mutex_unlock (&accessCR)!=0){
         printf("Main: error on exiting monitor(CF)");
     }
+
 }
 
 
@@ -145,7 +145,9 @@ struct Matrix getMatrixVal(unsigned int consId)
     }
 
     val = matrix_mem[ri_matrix];
+
     ri_matrix = (ri_matrix + 1) % K;
+
     full_matrix_mem = false;
     matrixProcessed++;
 

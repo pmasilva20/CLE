@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "./problem2Operations.h"
 #include <stdlib.h>
 #include <libgen.h>
 #include <unistd.h>
@@ -10,6 +9,7 @@
 #include <pthread.h>
 #include <time.h>
 #include <math.h>
+#include <stdbool.h>
 
 /**
  * Calculate Matrix Determinant
@@ -264,7 +264,6 @@ static void *worker (void *par)
 
         /** Retrieve Value Matrix */
         val = getMatrixVal (id);
-
         printf("Worker %u : Obtained Matrix %u.\n",id,val.id);
 
         /** Apply Gaussian Elimination */
