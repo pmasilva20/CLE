@@ -83,11 +83,16 @@ void putFileInfo(struct File_matrices file_info){
  */
 void putMatrixVal(struct Matrix matrix){
 
-    pthread_mutex_lock (&accessCR);
+    if(pthread_mutex_lock (&accessCR)!=0){
+        printf("Main: error on entering monitor(CF)");
+    }
 
     pthread_once (&init, initialization);
 
     while (full_matrix_mem){
+        if(pthread_cond_wait (&fifoMatrixFull, &accessCR)!=0){
+            printf("Main: error on waiting in fifoFull");
+        } //TODO: VER se é necessarily.
     };
 
     matrix_mem[ii_matrix]= matrix;
@@ -96,9 +101,13 @@ void putMatrixVal(struct Matrix matrix){
 
     full_matrix_mem = (ii_matrix == ri_matrix);
 
-    pthread_cond_signal (&fifoMatrixEmpty);
+    if(pthread_cond_signal (&fifoMatrixEmpty)!=0){
+        printf("Main: error on signaling in fifoEmpty");
+    }
 
-    pthread_mutex_unlock (&accessCR);
+    if(pthread_mutex_unlock (&accessCR)!=0){
+        printf("Main: error on exiting monitor(CF)");
+    }
 }
 
 
@@ -188,7 +197,7 @@ void putResults(struct Matrix_result result,unsigned int consId){
 
 /**
  * Print in the terminal the results stored in the Shared Region
- * @param filesToProcess Number of Files
+ * \param filesToProcess Number of Files
  */
 void getResults(int filesToProcess){
     for (int x = 0; x < filesToProcess; x++){

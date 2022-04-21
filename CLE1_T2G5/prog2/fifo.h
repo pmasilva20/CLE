@@ -46,7 +46,7 @@ extern void putFileInfo(struct File_matrices file_info);
 
 /**
  *  \brief Print in the terminal the results stored in the Shared Region
- *  @param filesToProcess Number of Files
+ *  \param filesToProcess Number of Files
  */
 extern void getResults(int filesToProcess);
 

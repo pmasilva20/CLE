@@ -9,12 +9,13 @@
 #include "probConst.h"
 #include <pthread.h>
 #include <time.h>
+#include <math.h>
 
 /**
  * Calculate Matrix Determinant
- * @param size Order of the Matrix
- * @param matrix Matrix
- * @return Determinant of the Matrix
+ * \param size Order of the Matrix
+ * \param matrix Matrix
+ * \return Determinant of the Matrix
  */
 double calculateMatrixDeterminant(int size,double matrix[size][size]){
     double determinant=matrix[0][0];
@@ -31,9 +32,9 @@ double calculateMatrixDeterminant(int size,double matrix[size][size]){
 
 /**
  * Apply Gaussian Elimination
- * @param orderMatrix Order of the Matrix
- * @param matrix Matrix
- * @return Matrix applied with Gaussian Elimination
+ * \param orderMatrix Order of the Matrix
+ * \param matrix Matrix
+ * \return Matrix applied with Gaussian Elimination
  */
 double gaussianElimination(int orderMatrix,double matrix[orderMatrix][orderMatrix]){
     //Função para transformar a generic square matrix of order n into an equivalent upper triangular matrix
@@ -86,9 +87,13 @@ int main(int argc, char** argv) {
     /** \brief File ID */
     int fileid=0;
 
-    int opt; /* selected option */
+    /** selected option */
+    int opt;
     opterr = 0;
 
+    /**
+     * Command Line Processing
+     */
     do {
         switch ((opt = getopt(argc, argv, ":f:t:h"))) {
             case 'f':
@@ -130,8 +135,10 @@ int main(int argc, char** argv) {
 
     statusWorks = malloc(sizeof(int)*numberWorkers);
 
+    /** Workers internal thread id array */
     pthread_t tIdWorkers[numberWorkers];
 
+    /** Workers application defined thread id array*/
     unsigned int works[numberWorkers];
 
     int *status_p;
@@ -142,7 +149,10 @@ int main(int argc, char** argv) {
     srandom ((unsigned int) getpid ());
 
 
-    //Inicializar Workers
+
+    /**
+     * Generation of intervening Workers threads
+     */
     for (int i = 0; i < numberWorkers; i++) {
         if (pthread_create(&tIdWorkers[i], NULL, worker, &works[i]) !=0)                             /* thread worker */
         {
@@ -154,6 +164,10 @@ int main(int argc, char** argv) {
         }
     }
     t0 = ((double) clock ()) / CLOCKS_PER_SEC;
+
+    /**
+     * File Processing and Matrices to Shared Region
+     */
     for (int i = 0; i < filesToProcess; i++) {
 
         FILE *pFile;
@@ -210,6 +224,7 @@ int main(int argc, char** argv) {
         filesStillToProcess--;
     };
 
+    /** Waiting for the termination of the Workers threads */
     for (int i = 0; i < numberWorkers; i++)
     { if (pthread_join (tIdWorkers[i], (void *) &status_p) != 0)
         {
@@ -224,35 +239,41 @@ int main(int argc, char** argv) {
 
     t2 += t1-t0;
 
-    /**
-     * Print Final Results
-     */
+    /** Print Final Results  */
     getResults(filesToProcess);
 
-    /**
-     * Print Elapsed Time
-     */
+    /** Print Elapsed Time */
     printf ("\nElapsed time = %.6f s\n", t2);
 }
 
+/**
+ * \brief Function worker.
+ * \param par pointer to application defined worker identification
+ */
 static void *worker (void *par)
 {
-    unsigned int id = *((unsigned int *) par);                                                          /* consumer id */
-    struct Matrix val;                                                                                /* produced value */
+    /** Worker ID */
+    unsigned int id = *((unsigned int *) par);
+
+    /** Matrix Value */
+    struct Matrix val;
 
     while ((matrixProcessed<matrixToProcess) || (filesStillToProcess > 0)){
+
         double matrixDeterminant;
 
-        printf("Worker %u :vou tentar obter matrix com %u no fifo\n",id,matrixToProcess-matrixProcessed);
-
+        /** Retrieve Value Matrix */
         val = getMatrixVal (id);
 
-        printf("Worker %u : Obtained Matrix.\n",id);
+        printf("Worker %u : Obtained Matrix %u.\n",id,val.id);
 
+        /** Apply Gaussian Elimination */
         gaussianElimination(val.orderMatrix,val.matrix);
 
+        /** Calculate Matrix Determinant */
         matrixDeterminant=calculateMatrixDeterminant(val.orderMatrix,val.matrix);
 
+        /** Matrix Determinant Result */
         struct Matrix_result matrix_determinant_result;
 
         matrix_determinant_result.fileid=val.fileid;
@@ -262,7 +283,9 @@ static void *worker (void *par)
         matrix_determinant_result.determinant=matrixDeterminant;
 
         printf("Worker %u : Determinant Calculated.\n",id);
+        //usleep((unsigned int) floor (90000.0 * random () / RAND_MAX + 1.5));                           /* do something else */
 
+        /** Store Matrix Determinant Result */
         putResults(matrix_determinant_result,id);
 
         printf("Worker %u : Saved Results obtained Matrix %u.\n",id,val.id);
