@@ -15,40 +15,31 @@
  * Calculate Matrix Determinant
  * \param size Order of the Matrix
  * \param matrix Matrix
- * \return Determinant of the Matrix
+ * \return Determinant of the Matrix after Gaussian Elimination
  */
-double calculateMatrixDeterminant(int size,double matrix[size][size]){
+double calculateMatrixDeterminant(int orderMatrix,double matrix[orderMatrix][orderMatrix]){
+
+    /** Apply Gaussian Elimination
+     *  Generic square matrix of order n into an equivalent upper triangular matrix
+    */
+    for(int i=0;i<orderMatrix-1;i++){
+        //Begin Gauss Elimination
+        for(int k=i+1;k<orderMatrix;k++){
+            double term=matrix[k][i]/matrix[i][i];
+            for(int j=0;j<orderMatrix;j++){
+                matrix[k][j]=matrix[k][j]-term*matrix[i][j];
+            }
+        }
+    }
+
     double determinant=matrix[0][0];
 
-    for (int x = 1; x < size; x++){
+    for (int x = 1; x < orderMatrix; x++){
         determinant*= matrix[x][x];
     }
 
     return determinant;
 
-}
-
-//TODO: Verificar se função é da forma que o professor pretende (apesar de funcionar).
-
-/**
- * Apply Gaussian Elimination
- * \param orderMatrix Order of the Matrix
- * \param matrix Matrix
- * \return Matrix applied with Gaussian Elimination
- */
-void gaussianElimination(int orderMatrix,double matrix[orderMatrix][orderMatrix]){
-    //Função para transformar a generic square matrix of order n into an equivalent upper triangular matrix
-    int i,j,k;
-
-    for(i=0;i<orderMatrix-1;i++){
-        //Begin Gauss Elimination
-        for(k=i+1;k<orderMatrix;k++){
-            double  term=matrix[k][i]/matrix[i][i];
-            for(j=0;j<orderMatrix;j++){
-                matrix[k][j]=matrix[k][j]-term*matrix[i][j];
-            }
-        }
-    }
 }
 
 static void printUsage(char *cmdName);
@@ -273,8 +264,6 @@ static void *worker (void *par)
         val = getMatrixVal (id);
         printf("Worker %u : Obtained Matrix %u.\n",id,val.id);
 
-        /** Apply Gaussian Elimination */
-        gaussianElimination(val.orderMatrix,val.matrix);
 
         /** Calculate Matrix Determinant */
         matrixDeterminant=calculateMatrixDeterminant(val.orderMatrix,val.matrix);
