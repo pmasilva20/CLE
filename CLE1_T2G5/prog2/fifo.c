@@ -160,7 +160,8 @@ struct Matrix getMatrixVal(unsigned int consId)
 
     return val;
 }
-//TODO: Verificar Monitor aqui!
+
+
 /**
  *  \brief Store a Determinant value of Matrix in the data transfer region.
  *

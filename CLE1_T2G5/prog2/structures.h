@@ -21,7 +21,7 @@ struct Matrix{
     int orderMatrix;
     int fileid;
     int id;
-    double matrix[256][256]; //TODO: Ver como fazer  aqui o malloc;
+    double matrix[256][256];
 };
 
 
