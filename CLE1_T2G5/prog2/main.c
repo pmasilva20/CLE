@@ -154,7 +154,7 @@ int main(int argc, char** argv) {
      * Generation of intervening Workers threads
      */
     for (int i = 0; i < numberWorkers; i++) {
-        if (pthread_create(&tIdWorkers[i], NULL, worker, &works[i]) !=0)                             /* thread worker */
+        if (pthread_create(&tIdWorkers[i], NULL, worker, &works[i]) !=0)
         {
             perror("error on creating thread worker");
             exit(EXIT_FAILURE);
@@ -187,11 +187,11 @@ int main(int argc, char** argv) {
 
             strcpy(file_info.name, listFiles[i]);
 
-            if(fread(&numberMatrices, sizeof(int), 1, pFile)!=0){
+            if(fread(&numberMatrices, sizeof(int), 1, pFile)==0){
                 printf("Main: Error reading Number of Matrices\n");
             }
 
-            if(fread(&orderMatrices, sizeof(int), 1, pFile)!=0){
+            if(fread(&orderMatrices, sizeof(int), 1, pFile)==0){
                 printf("Main: Error reading Order of Matrices\n");
             }
 
@@ -217,7 +217,7 @@ int main(int argc, char** argv) {
                 matrix1.id = i;
                 matrix1.orderMatrix = orderMatrices;
 
-                if(fread(&matrix1.matrix, sizeof(double), orderMatrices * orderMatrices, pFile)!=0){
+                if(fread(&matrix1.matrix, sizeof(double), orderMatrices * orderMatrices, pFile)==0){
                     printf("Main: Error reading Matrix\n");
                 }
 
@@ -295,7 +295,7 @@ static void *worker (void *par)
         putResults(matrix_determinant_result,id);
 
         printf("Worker %u : Saved Results obtained Matrix %u.\n",id,val.id);
-        printf("MatrixProcessed - %u : Files To Process - %u\n",matrixProcessed,filesStillToProcess);
+        //printf("MatrixProcessed - %u : Files To Process - %u\n",matrixProcessed,filesStillToProcess);
     };
 
     statusWorks[id] = EXIT_SUCCESS;
