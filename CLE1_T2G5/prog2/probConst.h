@@ -1,13 +1,3 @@
-/**
- *  \file probConst.h (interface file)
- *
- *  \brief Problem name: Producers / Consumers.
- *
- *  Problem simulation parameters.
- *
- *  \author António Rui Borges - March 2019
- */
-
 #ifndef PROBCONST_H_
 #define PROBCONST_H_
 
