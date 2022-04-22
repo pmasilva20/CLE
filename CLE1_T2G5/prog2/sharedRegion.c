@@ -100,6 +100,11 @@ static void initialization (void)
  */
 void putFileInfo(struct FileMatrices fileInfo){
 
+    /** Enter Monitor */
+    if(pthread_mutex_lock (&accessCR)!=0){
+        printf("Main: error on entering monitor(CF)");
+    }
+
     /** Close pFile if not null */
     if(file_mem[ii_fileInfo].pFile!=NULL){
         fclose(file_mem[ii_fileInfo].pFile);
@@ -108,9 +113,15 @@ void putFileInfo(struct FileMatrices fileInfo){
     /** Update Number of Matrices to Process */
     matrixToProcess += fileInfo.numberOfMatrices;
 
+    /** Save File in Shared Region */
     file_mem[ii_fileInfo] = fileInfo;
 
     ii_fileInfo++;
+
+    /** Exit Monitor */
+    if(pthread_mutex_unlock (&accessCR)!=0){
+        printf("Main: error on exiting monitor(CF)");
+    }
 
 }
 
@@ -124,11 +135,13 @@ void putFileInfo(struct FileMatrices fileInfo){
  */
 void putMatrixVal(struct Matrix matrix){
 
+    /** Enter Monitor */
     if(pthread_mutex_lock (&accessCR)!=0){
         printf("Main: error on entering monitor(CF)");
     }
 
     pthread_once (&init, initialization);
+
 
     /** While FIFO full wait */
     while (fullMatrixMem){
@@ -148,10 +161,12 @@ void putMatrixVal(struct Matrix matrix){
     /** Increase Number of Matrices in Shared Region */
     nMatricesInSharedRegion++;
 
+    /** Let a Worker know that a Matrix has been stored */
     if(pthread_cond_signal (&fifoMatrixEmpty)!=0){
         printf("Main: error on signaling in fifoEmpty");
     }
 
+    /** Exit monitor */
     if(pthread_mutex_unlock (&accessCR)!=0){
         printf("Main: error on exiting monitor(CF)");
     }
@@ -170,7 +185,7 @@ void putMatrixVal(struct Matrix matrix){
  */
 int getMatrixVal(unsigned int consId,struct Matrix *matrix)
 {
-
+    /** Enter Monitor */
     if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)
     {errno = statusWorks[consId];
         perror ("error on entering monitor(CF)");
@@ -204,6 +219,7 @@ int getMatrixVal(unsigned int consId,struct Matrix *matrix)
         /** Increase Number of Workers waiting */
         nWorkersWaiting++;
 
+        /** Exit monitor */
         if ((statusWorks[consId] = pthread_cond_wait (&fifoMatrixEmpty, &accessCR)) != 0)
         { errno = statusWorks[consId];
             perror ("error on waiting in fifoEmpty");
@@ -227,13 +243,22 @@ int getMatrixVal(unsigned int consId,struct Matrix *matrix)
     /** Decrease Number of Matrices in Shared Region */
     nMatricesInSharedRegion--;
 
+    /** Let Main know that a Matrix has been retrieved */
+    if ((statusWorks[consId] = pthread_cond_signal (&fifoMatrixFull)) != 0)
+    { errno = statusWorks[consId];
+        perror ("error on signaling in fifoFull");
+        statusWorks[consId] = EXIT_FAILURE;
+        pthread_exit (&statusWorks[consId]);
+    }
 
+    /** Exit monitor */
     if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)
     { errno = statusWorks[consId];
         perror ("error on exiting monitor(CF)");
         statusWorks[consId] = EXIT_FAILURE;
         pthread_exit (&statusWorks[consId]);
     }
+
     /** There is Work to do*/
     return 0;
 }
@@ -249,6 +274,7 @@ int getMatrixVal(unsigned int consId,struct Matrix *matrix)
  */
 void putResults(struct MatrixResult result, unsigned int consId){
 
+    /** Enter Monitor */
     if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)
     { errno = statusWorks[consId];
         perror ("error on entering monitor(CF)");
@@ -258,8 +284,8 @@ void putResults(struct MatrixResult result, unsigned int consId){
 
     pthread_once (&init, initialization);
 
-    size_t arraySize = sizeof(file_mem) / sizeof(*file_mem);
-    for (int x = 0; x < arraySize; x++){
+    /** Save Results in Shared Region*/
+    for (int x = 0; x < ii_fileInfo; x++){
         if(file_mem[x].id==result.fileid){
             int id =result.id;
             file_mem[x].determinant_result[id]=result;
@@ -267,6 +293,7 @@ void putResults(struct MatrixResult result, unsigned int consId){
         }
     }
 
+    /** Exit monitor */
     if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)
     { errno = statusWorks[consId];
         perror ("error on exiting monitor(CF)");
