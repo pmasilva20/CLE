@@ -154,7 +154,6 @@ void putMatrixVal(struct Matrix matrix){
  */
 int getMatrixVal(unsigned int consId,struct Matrix *matrix)
 {
-    printf("Worker %u : Aqui estou Manuel Acacio.\n",consId);
 
     if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)
     {errno = statusWorks[consId];
@@ -167,11 +166,14 @@ int getMatrixVal(unsigned int consId,struct Matrix *matrix)
 
     while ((ii_matrix == ri_matrix) && !fullMatrixMem)
     {
-        printf("Worker %u : Aqui estou Esperando.\n",consId);
-
+        /**
+         * If the number of matrices processed is equal to the number of matrices to be processed then the worker knows that it has run out of work.
+         *
+         * Or if there is no work available for the waiting workers, that is, if the number of waiting workers is greater than the number of matrices
+         * in the shared region and if the difference between the matrices to process and matrices already sent to the shared
+         * region is equal or less than the number of workers waiting.
+         */
         if((matrixProcessed==matrixToProcess) || (nWorkersWaiting > nMatricesInSharedRegion && (matrixToProcess - nMatricesSentToSharedRegion <= nWorkersWaiting))){
-
-            printf("Thread %u a VAI SAIR com %u matrix to fifo e %u no fifo with %u waiting\n", consId, nMatricesSentToSharedRegion, nMatricesInSharedRegion, nWorkersWaiting);
 
             if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)
             { errno = statusWorks[consId];
@@ -186,8 +188,6 @@ int getMatrixVal(unsigned int consId,struct Matrix *matrix)
         /** Increase Number of Workers waiting */
         nWorkersWaiting++;
 
-        printf("Thread %u a VAI esperar com %u matrix to fifo e %u no fifo with %u waiting\n", consId, nMatricesSentToSharedRegion, nMatricesInSharedRegion, nWorkersWaiting);
-
         if ((statusWorks[consId] = pthread_cond_wait (&fifoMatrixEmpty, &accessCR)) != 0)
         { errno = statusWorks[consId];
             perror ("error on waiting in fifoEmpty");
@@ -199,22 +199,17 @@ int getMatrixVal(unsigned int consId,struct Matrix *matrix)
         nWorkersWaiting--;
     }
 
-
-    printf("Worker %u : VAI ENTRAR com %u matrix to fifo e  %u no fifo ficando %u waiting\n", consId, nMatricesSentToSharedRegion, nMatricesInSharedRegion, nWorkersWaiting);
-
-
-
     *matrix = matrix_mem[ri_matrix];
 
     ri_matrix = (ri_matrix + 1) % K;
 
     fullMatrixMem = false;
 
+    /** Increase Number of Matrices processed */
     matrixProcessed++;
 
     /** Decrease Number of Matrices in Shared Region */
     nMatricesInSharedRegion--;
-
 
 
     if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)
