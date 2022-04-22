@@ -241,7 +241,7 @@ int main(int argc, char** argv) {
     PrintResults(filesToProcess);
 
     /** Print Elapsed Time */
-    printf ("\nElapsed time = %.6f s\n", (finish.tv_nsec - start.tv_nsec) / 1000000000.0);
+    printf ("\nElapsed tim = %.6f s\n",  (finish.tv_sec - start.tv_sec) / 1.0 + (finish.tv_nsec - start.tv_nsec) / 1000000000.0);
 }
 
 /**
