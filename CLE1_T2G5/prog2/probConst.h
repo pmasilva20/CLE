@@ -1,26 +1,20 @@
 /**
- *  \file probConst.h (interface file)
+ *  \file probConst.h
  *
- *  \brief Problem name: Producers / Consumers.
+ *  \brief Assignment 1 : Problem 2 - Determinant of a Square Matrix
  *
- *  Problem simulation parameters.
+ *  Generic Parameters
  *
- *  \author António Rui Borges - March 2019
+ *  \author João Soares (93078) e Pedro Silva (93011)
  */
 
 #ifndef PROBCONST_H_
 #define PROBCONST_H_
 
-/* Generic parameters */
+/** \brief number of Files capacity (in number of files supported) */
+#define  N           10
 
-/** \brief number of producers / consumers */
-#define  N           4
-
-/** \brief data transfer region nominal capacity (in number of values that can be stored) */
+/** \brief Matrices transfer region nominal capacity (in number of Matrices that can be stored) */
 #define  K            128
-
-/** \brief number of iterations of the life cycle */
-#define  M           10
-
 
 #endif /* PROBCONST_H_ */
