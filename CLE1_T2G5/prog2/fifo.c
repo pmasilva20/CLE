@@ -80,10 +80,22 @@ static void initialization (void)
  *
  *  \param val File (File_matrices) to be stored
  */
-void putFileInfo(struct File_matrices file_info){
-    file_mem[ii_fileInfo] = file_info;
-    matrixToProcess+=file_info.numberOfMatrices;
+void putFileInfo(struct File_matrices fileInfo){
+
+    /** Close pFile if not null */
+    if(file_mem[ii_fileInfo].pFile!=NULL){
+        fclose(file_mem[ii_fileInfo].pFile);
+    }
+
+    /** Update Number of Matrices to Process */
+    matrixToProcess += fileInfo.numberOfMatrices;
+
+    file_mem[ii_fileInfo] = fileInfo;
+
     ii_fileInfo++;
+
+
+
 }
 
 /**
@@ -157,7 +169,7 @@ int getMatrixVal(unsigned int consId,struct Matrix *matrix)
     {
         printf("Worker %u : Aqui estou Esperando.\n",consId);
 
-        if((matrixProcessed==128) || (nWorkersWaiting > nMatricesInSharedRegion && (128 - nMatricesSentToSharedRegion <= nWorkersWaiting))){
+        if((matrixProcessed==matrixToProcess) || (nWorkersWaiting > nMatricesInSharedRegion && (matrixToProcess - nMatricesSentToSharedRegion <= nWorkersWaiting))){
 
             printf("Thread %u a VAI SAIR com %u matrix to fifo e %u no fifo with %u waiting\n", consId, nMatricesSentToSharedRegion, nMatricesInSharedRegion, nWorkersWaiting);
 
@@ -258,11 +270,15 @@ void putResults(struct Matrix_result result,unsigned int consId){
  */
 void getResults(int filesToProcess){
     for (int x = 0; x < filesToProcess; x++){
-        printf("File: %s\n",file_mem[x].name);
+        printf("\nFile: %s\n",file_mem[x].name);
         for (int a = 0; a < file_mem[x].numberOfMatrices; a++){
             printf("Matrix %d :\n",file_mem[x].determinant_result[a].id+1);
             printf("The determinant is %.3e\n",file_mem[x].determinant_result[a].determinant);
         }
+
+        /** Free allocated memory */
+        free(file_mem[x].determinant_result);
+
         printf("\n");
     }
 }

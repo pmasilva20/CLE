@@ -11,8 +11,10 @@ struct Matrix_result{
 /** Structure of File */
 struct File_matrices{
     int id;
+    FILE *pFile;
     char name[40];
     int numberOfMatrices;
+    int orderOfMatrices;
     struct Matrix_result *determinant_result;
 };
 

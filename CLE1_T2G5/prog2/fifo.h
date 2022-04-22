@@ -44,7 +44,7 @@ extern void putResults(struct Matrix_result result,unsigned int consId);
  *
  *  \param val File (File_matrices) to be stored
  */
-extern void putFileInfo(struct File_matrices file_info);
+extern void putFileInfo(struct File_matrices fileInfo);
 
 /**
  *  \brief Print in the terminal the results stored in the Shared Region

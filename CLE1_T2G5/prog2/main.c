@@ -53,11 +53,11 @@ int *statusWorks;
 /** \brief Number of Matrices processed by workers **/
 int  matrixProcessed = 0;
 
-/** \brief Number of Files Still to be processed **/
-int filesStillToProcess =0;
-
 /** \brief Number of Files to be processed **/
 int filesToProcess =0;
+
+/** \brief Number of Files to present Results **/
+int filesToShowResults =0;
 
 int main(int argc, char** argv) {
 
@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
     int numberWorkers=0;
 
     /** \brief  List of Files**/
-    char *listFiles[N];
+    struct File_matrices listFiles[N];
 
     /** \brief File ID */
     int fileid=0;
@@ -90,8 +90,16 @@ int main(int argc, char** argv) {
                     printUsage(basename(argv[0]));
                     return EXIT_FAILURE;
                 }
-                listFiles[fileid]=optarg;
+                struct File_matrices file_info;
+
+                strcpy(file_info.name, optarg);
+
+                file_info.id=fileid;
+
+                listFiles[fileid]=file_info;
+
                 fileid++;
+
                 break;
             case 't':
                 numberWorkers = atoi(optarg);
@@ -107,7 +115,6 @@ int main(int argc, char** argv) {
         }
     } while (opt != -1);
 
-    //TODO: Talvez tirar isto
     if (argc == 1){
         fprintf (stderr, "%s: invalid format\n", basename (argv[0]));
         printUsage (basename (argv[0]));
@@ -115,11 +122,11 @@ int main(int argc, char** argv) {
     }
 
 
-    /** \brief  Files Still To Process **/
-    filesStillToProcess=fileid;
-
     /** \brief Files to Process */
     filesToProcess=fileid;
+
+    /** \brief Files to Process */
+    filesToShowResults=fileid;
 
     statusWorks = malloc(sizeof(int)*numberWorkers);
 
@@ -137,6 +144,42 @@ int main(int argc, char** argv) {
     srandom ((unsigned int) getpid ());
 
 
+    t0 = ((double) clock ()) / CLOCKS_PER_SEC;
+
+    /**
+     * File Processing to save in Shared Region
+     */
+    for (int i = 0; i < filesToProcess; i++) {
+
+        listFiles[i].pFile= fopen(listFiles[i].name, "r");
+
+        if (listFiles[i].pFile == NULL) {
+            //TODO: Ver isto;
+            //fclose(listFiles[i].pFile);
+            printf("\nError reading File: %s\n",listFiles[i].name);
+            filesToShowResults--;
+        }
+
+        else{
+
+            if(fread(&listFiles[i].numberOfMatrices, sizeof(int), 1, listFiles[i].pFile)==0){
+                printf("Main: Error reading Number of Matrices\n");
+            }
+
+            if(fread(&listFiles[i].orderOfMatrices, sizeof(int), 1, listFiles[i].pFile)==0){
+                printf("Main: Error reading Order of Matrices\n");
+            }
+
+            printf("\nFile %u - Number of Matrices to be read  = %d\n", listFiles[i].id, listFiles[i].numberOfMatrices);
+
+            printf("File %u - Order of Matrices to be read  = %d\n", listFiles[i].id, listFiles[i].orderOfMatrices);
+
+            listFiles[i].determinant_result = malloc(sizeof(struct Matrix_result) * listFiles[i].numberOfMatrices);
+        }
+        /** Save File in Shared Region */
+        putFileInfo(listFiles[i]);
+    }
+
 
     /**
      * Generation of intervening Workers threads
@@ -151,70 +194,36 @@ int main(int argc, char** argv) {
             printf("Thread Worker Created %d !\n", i);
         }
     }
-    t0 = ((double) clock ()) / CLOCKS_PER_SEC;
 
     /**
-     * File Processing and Matrices to Shared Region
+     * Read Succefully Files and send Matrices to store in the Shared Region
      */
-    for (int i = 0; i < filesToProcess; i++) {
+    for (int id = 0; id < filesToProcess; id++) {
 
-        FILE *pFile;
-        pFile = fopen(listFiles[i], "r");
+        if (!listFiles[id].pFile == NULL) {
 
-        if (pFile == NULL) {
-            printf("Error reading File: %s\n",listFiles[i]);
-        }
-        else {
-            struct File_matrices file_info;
-
-            int numberMatrices;
-            int orderMatrices;
-
-            file_info.id = i;
-
-            strcpy(file_info.name, listFiles[i]);
-
-            if(fread(&numberMatrices, sizeof(int), 1, pFile)==0){
-                printf("Main: Error reading Number of Matrices\n");
-            }
-
-            if(fread(&orderMatrices, sizeof(int), 1, pFile)==0){
-                printf("Main: Error reading Order of Matrices\n");
-            }
-
-            printf("\nFile %u - Number of Matrices to be read  = %d\n", file_info.id, numberMatrices);
-            printf("File %u - Matrices order = %d\n", file_info.id, orderMatrices);
-            printf("\n");
-
-            file_info.numberOfMatrices=numberMatrices;
-
-            //TODO: Verificar onde libertar memória
-            file_info.determinant_result = malloc(sizeof(struct Matrix_result) * numberMatrices);
-            putFileInfo(file_info);
-
-            //printf("Main : File %u (%s) to Shared Region.\n", file_info.id, file_info.name);
-
-            for (int i = 0; i < numberMatrices; i++) {
+            for (int i = 0; i < listFiles[id].numberOfMatrices; i++) {
 
                 struct Matrix matrix1;
 
-                matrix1.fileid = file_info.id;
+                matrix1.fileid = listFiles[id].id;
                 matrix1.id = i;
-                matrix1.orderMatrix = orderMatrices;
+                matrix1.orderMatrix = listFiles[id].orderOfMatrices;
 
-                if(fread(&matrix1.matrix, sizeof(double), orderMatrices * orderMatrices, pFile)==0){
-                    printf("Main: Error reading Matrix\n");
+                if(fread(&matrix1.matrix, sizeof(double), listFiles[id].orderOfMatrices * listFiles[id].orderOfMatrices, listFiles[id].pFile)==0){
+                    perror("Main: Error reading Matrix\n");
                 }
-
                 putMatrixVal(matrix1);
 
                 printf("Main : Matrix %u to Shared Region.\n", i);
-
             };
+
+            fclose(listFiles[id].pFile);
         }
-        /** Decrease Number of Files to Process **/
-        filesStillToProcess--;
-    };
+
+
+    }
+
 
 
 
@@ -234,7 +243,7 @@ int main(int argc, char** argv) {
     t2 += t1-t0;
 
     /** Print Final Results  */
-    getResults(filesToProcess);
+    getResults(filesToShowResults);
 
     /** Print Elapsed Time */
     printf ("\nElapsed time = %.6f s\n", t2);
@@ -269,7 +278,7 @@ static void *worker (void *par)
         /** Calculate Matrix Determinant */
         matrix_determinant_result.determinant=calculateMatrixDeterminant(val.orderMatrix,val.matrix);
 
-        printf("Worker %u : Matrix %u Determinant Obtained.\n",val.id,id);
+        printf("Worker %u : Matrix %u Determinant Obtained.\n",id,val.id);
 
         /** Store Matrix Determinant Result */
         putResults(matrix_determinant_result,id);
