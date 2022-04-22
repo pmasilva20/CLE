@@ -10,8 +10,9 @@
  *  Operation carried out by the workers.
  *
  *  \param consId worker identification
+ *  \param *matrix Address of Variable Matrix
  *
- *  \return value
+ *  \return Whatever there is Work to do;
  */
 int getMatrixVal(unsigned int consId, struct Matrix *matrix);
 
@@ -51,5 +52,4 @@ extern void putFileInfo(struct File_matrices file_info);
  */
 extern void getResults(int filesToProcess);
 
-extern bool canigo(unsigned int consId);
 #endif

@@ -53,9 +53,6 @@ int *statusWorks;
 /** \brief Number of Matrices processed by workers **/
 int  matrixProcessed = 0;
 
-/** \brief  Number of Matrices to be processed by workers **/
-int matrixToProcess =0;
-
 /** \brief Number of Files Still to be processed **/
 int filesStillToProcess =0;
 
@@ -168,7 +165,6 @@ int main(int argc, char** argv) {
             printf("Error reading File: %s\n",listFiles[i]);
         }
         else {
-
             struct File_matrices file_info;
 
             int numberMatrices;
@@ -192,13 +188,11 @@ int main(int argc, char** argv) {
 
             file_info.numberOfMatrices=numberMatrices;
 
-            matrixToProcess += numberMatrices;
-
             //TODO: Verificar onde libertar memória
             file_info.determinant_result = malloc(sizeof(struct Matrix_result) * numberMatrices);
             putFileInfo(file_info);
 
-            printf("Main : File %u (%s) to Shared Region.\n", file_info.id, file_info.name);
+            //printf("Main : File %u (%s) to Shared Region.\n", file_info.id, file_info.name);
 
             for (int i = 0; i < numberMatrices; i++) {
 
@@ -221,6 +215,8 @@ int main(int argc, char** argv) {
         /** Decrease Number of Files to Process **/
         filesStillToProcess--;
     };
+
+
 
     /** Waiting for the termination of the Workers threads */
     for (int i = 0; i < numberWorkers; i++)
@@ -256,35 +252,29 @@ static void *worker (void *par)
     /** Matrix Value */
     struct Matrix val;
 
+    /** While there are matrix to process */
     while (getMatrixVal(id,&val)!=1){
-
-        double matrixDeterminant;
-
-        /** Retrieve Value Matrix */
-        //val = getMatrixVal (id);
-        printf("Worker %u : Obtained Matrix %u.\n",id,val.id);
-
-
-        /** Calculate Matrix Determinant */
-        matrixDeterminant=calculateMatrixDeterminant(val.orderMatrix,val.matrix);
 
         /** Matrix Determinant Result */
         struct Matrix_result matrix_determinant_result;
+
+        //val = getMatrixVal (id);
+        /** Retrieve Value Matrix */
+        printf("Worker %u : Obtained Matrix %u.\n",id,val.id);
 
         matrix_determinant_result.fileid=val.fileid;
 
         matrix_determinant_result.id=val.id;
 
-        matrix_determinant_result.determinant=matrixDeterminant;
+        /** Calculate Matrix Determinant */
+        matrix_determinant_result.determinant=calculateMatrixDeterminant(val.orderMatrix,val.matrix);
 
-        printf("Worker %u : Determinant Calculated.\n",id);
-        //usleep((unsigned int) floor (90000.0 * random () / RAND_MAX + 1.5));                           /* do something else */
+        printf("Worker %u : Matrix %u Determinant Obtained.\n",val.id,id);
 
         /** Store Matrix Determinant Result */
         putResults(matrix_determinant_result,id);
 
-        printf("Worker %u : Saved Results obtained Matrix %u.\n",id,val.id);
-        //printf("MatrixProcessed - %u : Files To Process - %u\n",matrixProcessed,filesStillToProcess);
+        printf("Worker %u : Saved Results obtained from Matrix %u.\n",id,val.id);
     };
 
     statusWorks[id] = EXIT_SUCCESS;
