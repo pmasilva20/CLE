@@ -15,6 +15,10 @@ extern int *statusWorks;
 /** \brief Number of matrices already processed */
 extern int matrixProcessed;
 
+int matrixToFIFO;
+static unsigned int worker_waiting;
+int matrixInfifo;
+
 /** \brief Matrices storage region */
 static struct Matrix matrix_mem[K];
 
@@ -53,7 +57,7 @@ static pthread_once_t init = PTHREAD_ONCE_INIT;;
 static void initialization (void)
 {
 
-    ii_matrix = ri_matrix = 0;
+    ii_matrix = ri_matrix = worker_waiting = 0;
     full_matrix_mem = false;
 
     /* initialize of synchronization points */
@@ -99,7 +103,8 @@ void putMatrixVal(struct Matrix matrix){
     ii_matrix= (ii_matrix+1)%K;
 
     full_matrix_mem = (ii_matrix == ri_matrix);
-
+    matrixToFIFO++;
+    matrixInfifo++;
     if(pthread_cond_signal (&fifoMatrixEmpty)!=0){
         printf("Main: error on signaling in fifoEmpty");
     }
@@ -110,6 +115,56 @@ void putMatrixVal(struct Matrix matrix){
 
 }
 
+//TODO: ISTO NÃO ESTÁ A DAR NADA BEM. SÓ QUASE UM WORKER TRABALHA.
+bool canigo(unsigned int consId){
+
+    bool value;
+
+    if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)
+    {
+        errno = statusWorks[consId];
+        perror ("error on entering monitor(CF)");
+        statusWorks[consId] = EXIT_FAILURE;
+        pthread_exit (&statusWorks[consId]);
+    }
+
+    pthread_once (&init, initialization);
+
+    if(matrixProcessed<128){
+        if(matrixInfifo>worker_waiting){
+            printf("Thread %u a VAI entrar com %u matrix to fifo e %u no fifo with %u waiting\n",consId,matrixToFIFO,matrixInfifo,worker_waiting);
+            value=true;
+        }
+    }
+    else{
+        printf("Thread %u a VAI entrar com %u matrix to fifo e %u no fifo with %u waiting\n",consId,matrixToFIFO,matrixInfifo,worker_waiting);
+        value=false;
+    }
+
+    /*
+    if(matrixProcessed<128-worker_waiting  && ((matrixToFIFO-matrixInfifo))==0){
+        printf("Thread %u a VAI entrar com %u matrix to fifo e %u no fifo with %u waiting\n",consId,matrixToFIFO,matrixInfifo,worker_waiting);
+        value=true;
+    }
+    //Not all processed
+    else if(matrixProcessed<128-worker_waiting && ((matrixToFIFO-matrixInfifo)>1)){
+        printf("Thread %u a VAI entrar com %u matrix to fifo e %u no fifo with %u waiting\n",consId,matrixToFIFO,matrixInfifo,worker_waiting);
+        value=true;
+    }
+    else{
+        value=false;
+        printf("Thread %u a NÃO vai entrar com %u matrix to fifo e %u no fifo with %u waiting\n",consId,matrixToFIFO,matrixInfifo,worker_waiting);
+
+    }*/
+
+    if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)
+    { errno = statusWorks[consId];
+        perror ("error on exiting monitor(CF)");
+        statusWorks[consId] = EXIT_FAILURE;
+        pthread_exit (&statusWorks[consId]);
+    }
+    return value;
+}
 
 /**
  *  \brief Get a Matrix value from the data transfer region.
@@ -120,10 +175,11 @@ void putMatrixVal(struct Matrix matrix){
  *
  *  \return value
  */
-struct Matrix getMatrixVal(unsigned int consId)
+int getMatrixVal(unsigned int consId,struct Matrix *matrix)
 {
     struct Matrix val;
 
+    printf("Worker %u : Aqui estou Manuel Acacio.\n",consId);
 
     if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)
     {errno = statusWorks[consId];
@@ -136,20 +192,51 @@ struct Matrix getMatrixVal(unsigned int consId)
 
     while ((ii_matrix == ri_matrix) && !full_matrix_mem)
     {
+        printf("Worker %u : Aqui estou Esperando.\n",consId);
+
+        if((matrixProcessed==128) || (worker_waiting>matrixInfifo && (128-matrixToFIFO<=worker_waiting))){
+
+            printf("Thread %u a VAI SAIR com %u matrix to fifo e %u no fifo with %u waiting\n",consId,matrixToFIFO,matrixInfifo,worker_waiting);
+
+            if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)
+            { errno = statusWorks[consId];
+                perror ("error on exiting monitor(CF)");
+                statusWorks[consId] = EXIT_FAILURE;
+                pthread_exit (&statusWorks[consId]);
+            }
+
+            return 1;
+        }
+
+        worker_waiting=worker_waiting+1;
+
+        printf("Thread %u a VAI esperar com %u matrix to fifo e %u no fifo with %u waiting\n",consId,matrixToFIFO,matrixInfifo,worker_waiting);
+
         if ((statusWorks[consId] = pthread_cond_wait (&fifoMatrixEmpty, &accessCR)) != 0)
         { errno = statusWorks[consId];
             perror ("error on waiting in fifoEmpty");
             statusWorks[consId] = EXIT_FAILURE;
             pthread_exit (&statusWorks[consId]);
         }
+        worker_waiting--;
     }
 
-    val = matrix_mem[ri_matrix];
+
+    printf("Worker %u : VAI ENTRAR com %u matrix to fifo e  %u no fifo ficando %u waiting\n",consId,matrixToFIFO,matrixInfifo,worker_waiting);
+
+
+
+    *matrix = matrix_mem[ri_matrix];
 
     ri_matrix = (ri_matrix + 1) % K;
 
     full_matrix_mem = false;
+
     matrixProcessed++;
+
+    matrixInfifo--;
+
+
 
     if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)
     { errno = statusWorks[consId];
@@ -158,7 +245,7 @@ struct Matrix getMatrixVal(unsigned int consId)
         pthread_exit (&statusWorks[consId]);
     }
 
-    return val;
+    return 0;
 }
 
 

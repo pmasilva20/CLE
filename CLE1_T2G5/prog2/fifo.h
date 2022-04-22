@@ -1,6 +1,7 @@
 #ifndef FIFO_H
 #define FIFO_H
 
+#include <stdbool.h>
 #include "structures.h"
 
 /**
@@ -12,7 +13,7 @@
  *
  *  \return value
  */
-struct Matrix getMatrixVal(unsigned int consId);
+int getMatrixVal(unsigned int consId, struct Matrix *matrix);
 
 /**
  *  \brief Store a Matrix value in the data transfer region.
@@ -50,4 +51,5 @@ extern void putFileInfo(struct File_matrices file_info);
  */
 extern void getResults(int filesToProcess);
 
+extern bool canigo(unsigned int consId);
 #endif

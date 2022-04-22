@@ -256,12 +256,12 @@ static void *worker (void *par)
     /** Matrix Value */
     struct Matrix val;
 
-    while ((matrixProcessed<matrixToProcess) || (filesStillToProcess > 0)){
+    while (getMatrixVal(id,&val)!=1){
 
         double matrixDeterminant;
 
         /** Retrieve Value Matrix */
-        val = getMatrixVal (id);
+        //val = getMatrixVal (id);
         printf("Worker %u : Obtained Matrix %u.\n",id,val.id);
 
 
