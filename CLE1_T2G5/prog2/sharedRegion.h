@@ -34,22 +34,22 @@ extern void putMatrixVal(struct Matrix matrix);
  *  \param prodId worker identification
  *  \param val Determinant value of Matrix to be stored
  */
-extern void putResults(struct Matrix_result result,unsigned int consId);
+extern void putResults(struct MatrixResult result, unsigned int consId);
 
 
 /**
- *  \brief Store a File (File_matrices) value in the data transfer region.
+ *  \brief Store a File (FileMatrices) value in the data transfer region.
  *
  *  Operation carried out by the Main.
  *
- *  \param val File (File_matrices) to be stored
+ *  \param val File (FileMatrices) to be stored
  */
-extern void putFileInfo(struct File_matrices fileInfo);
+extern void putFileInfo(struct FileMatrices fileInfo);
 
 /**
  *  \brief Print in the terminal the results stored in the Shared Region
  *  \param filesToProcess Number of Files
  */
-extern void getResults(int filesToProcess);
+extern void PrintResults(int filesToProcess);
 
 #endif

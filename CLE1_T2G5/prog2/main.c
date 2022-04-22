@@ -1,15 +1,24 @@
+/**
+ *  \file main.c
+ *
+ *  \brief Assignment 1 : Problem 2 - Determinant of a Square Matrix
+ *
+ *  Main Program
+ *
+ *  \author João Soares (93078) e Pedro Silva (93011)
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <libgen.h>
 #include <unistd.h>
-#include "fifo.h"
+#include "sharedRegion.h"
 #include <string.h>
 #include "structures.h"
 #include "probConst.h"
 #include <pthread.h>
 #include <time.h>
-#include <math.h>
-#include <stdbool.h>
+
 
 /**
  * Calculate Matrix Determinant
@@ -19,7 +28,7 @@
  */
 double calculateMatrixDeterminant(int orderMatrix,double matrix[orderMatrix][orderMatrix]){
 
-    /** Apply Gaussian Elimination
+    /** \brief Apply Gaussian Elimination
      *  Generic square matrix of order n into an equivalent upper triangular matrix
     */
     for(int i=0;i<orderMatrix-1;i++){
@@ -70,7 +79,7 @@ int main(int argc, char** argv) {
     int numberWorkers=0;
 
     /** \brief  List of Files**/
-    struct File_matrices listFiles[N];
+    struct FileMatrices listFiles[N];
 
     /** \brief File ID */
     int fileid=0;
@@ -90,14 +99,15 @@ int main(int argc, char** argv) {
                     printUsage(basename(argv[0]));
                     return EXIT_FAILURE;
                 }
-                struct File_matrices file_info;
-
+                /** Initialization FileMatrices*/
+                struct FileMatrices file_info;
+                /** Set Name*/
                 strcpy(file_info.name, optarg);
-
+                /** Set id*/
                 file_info.id=fileid;
-
+                /** Save in List of Files*/
                 listFiles[fileid]=file_info;
-
+                /** Update fileid */
                 fileid++;
 
                 break;
@@ -136,6 +146,7 @@ int main(int argc, char** argv) {
     /** Workers application defined thread id array*/
     unsigned int works[numberWorkers];
 
+    /** Pointer to execution status */
     int *status_p;
 
     for (int i = 0; i < numberWorkers; i++)
@@ -154,12 +165,10 @@ int main(int argc, char** argv) {
         listFiles[i].pFile= fopen(listFiles[i].name, "r");
 
         if (listFiles[i].pFile == NULL) {
-            //TODO: Ver isto;
-            //fclose(listFiles[i].pFile);
             printf("\nError reading File: %s\n",listFiles[i].name);
+            /**Decrease Number of Files to be used in PrintResults*/
             filesToShowResults--;
         }
-
         else{
 
             if(fread(&listFiles[i].numberOfMatrices, sizeof(int), 1, listFiles[i].pFile)==0){
@@ -174,7 +183,7 @@ int main(int argc, char** argv) {
 
             printf("File %u - Order of Matrices to be read  = %d\n", listFiles[i].id, listFiles[i].orderOfMatrices);
 
-            listFiles[i].determinant_result = malloc(sizeof(struct Matrix_result) * listFiles[i].numberOfMatrices);
+            listFiles[i].determinant_result = malloc(sizeof(struct MatrixResult) * listFiles[i].numberOfMatrices);
         }
         /** Save File in Shared Region */
         putFileInfo(listFiles[i]);
@@ -196,7 +205,7 @@ int main(int argc, char** argv) {
     }
 
     /**
-     * Read Succefully Files and send Matrices to store in the Shared Region
+     * Read Successfully Files and send Matrices to store in the Shared Region
      */
     for (int id = 0; id < filesToProcess; id++) {
 
@@ -220,8 +229,6 @@ int main(int argc, char** argv) {
 
             fclose(listFiles[id].pFile);
         }
-
-
     }
 
 
@@ -243,7 +250,7 @@ int main(int argc, char** argv) {
     t2 += t1-t0;
 
     /** Print Final Results  */
-    getResults(filesToShowResults);
+    PrintResults(filesToShowResults);
 
     /** Print Elapsed Time */
     printf ("\nElapsed time = %.6f s\n", t2);
@@ -265,9 +272,8 @@ static void *worker (void *par)
     while (getMatrixVal(id,&val)!=1){
 
         /** Matrix Determinant Result */
-        struct Matrix_result matrix_determinant_result;
+        struct MatrixResult matrix_determinant_result;
 
-        //val = getMatrixVal (id);
         /** Retrieve Value Matrix */
         printf("Worker %u : Obtained Matrix %u.\n",id,val.id);
 

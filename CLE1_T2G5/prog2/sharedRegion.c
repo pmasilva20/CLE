@@ -1,13 +1,31 @@
+/**
+ *  \file sharedRegion.c
+ *
+ *  \brief Assignment 1 : Problem 2 - Determinant of a Square Matrix
+ * *
+ *  Shared Region
+ *
+ *  Main Operations:
+ *     \li putFileInfo
+ *     \li putMatrixVal
+ *     \li PrintResults
+ *
+ *  Workers Operations:
+ *     \li getMatrixVal
+ *     \li putResults
+ *
+ *
+ *  \author João Soares (93078) e Pedro Silva (93011)
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <errno.h>
-
 #include "probConst.h"
 #include "structures.h"
-
 
 /** \brief consumer threads return status array */
 extern int *statusWorks;
@@ -31,7 +49,7 @@ static unsigned int nMatricesInSharedRegion;
 static struct Matrix matrix_mem[K];
 
 /** \brief Files storage region */
-static struct File_matrices file_mem[N];
+static struct FileMatrices file_mem[N];
 
 /** \brief insertion pointer for file_mem */
 static unsigned int  ii_fileInfo;
@@ -74,13 +92,13 @@ static void initialization (void)
 }
 
 /**
- *  \brief Store a File (File_matrices) value in the data transfer region.
+ *  \brief Store a File (FileMatrices) value in the data transfer region.
  *
  *  Operation carried out by the Main.
  *
- *  \param val File (File_matrices) to be stored
+ *  \param val File (FileMatrices) to be stored
  */
-void putFileInfo(struct File_matrices fileInfo){
+void putFileInfo(struct FileMatrices fileInfo){
 
     /** Close pFile if not null */
     if(file_mem[ii_fileInfo].pFile!=NULL){
@@ -93,8 +111,6 @@ void putFileInfo(struct File_matrices fileInfo){
     file_mem[ii_fileInfo] = fileInfo;
 
     ii_fileInfo++;
-
-
 
 }
 
@@ -231,7 +247,7 @@ int getMatrixVal(unsigned int consId,struct Matrix *matrix)
  *  \param prodId worker identification
  *  \param val Determinant value of Matrix to be stored
  */
-void putResults(struct Matrix_result result,unsigned int consId){
+void putResults(struct MatrixResult result, unsigned int consId){
 
     if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)
     { errno = statusWorks[consId];
@@ -263,7 +279,7 @@ void putResults(struct Matrix_result result,unsigned int consId){
  * Print in the terminal the results stored in the Shared Region
  * \param filesToProcess Number of Files
  */
-void getResults(int filesToProcess){
+void PrintResults(int filesToProcess){
     for (int x = 0; x < filesToProcess; x++){
         printf("\nFile: %s\n",file_mem[x].name);
         for (int a = 0; a < file_mem[x].numberOfMatrices; a++){
