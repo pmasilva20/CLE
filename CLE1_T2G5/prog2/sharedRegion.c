@@ -282,15 +282,20 @@ void putResults(struct MatrixResult result, unsigned int consId){
 void PrintResults(int filesToProcess){
     for (int x = 0; x < filesToProcess; x++){
         printf("\nFile: %s\n",file_mem[x].name);
-        for (int a = 0; a < file_mem[x].numberOfMatrices; a++){
-            printf("Matrix %d :\n",file_mem[x].determinant_result[a].id+1);
-            printf("The determinant is %.3e\n",file_mem[x].determinant_result[a].determinant);
+        if(file_mem[x].numberOfMatrices) {
+            for (int a = 0; a < file_mem[x].numberOfMatrices; a++) {
+                printf("Matrix %d :\n", file_mem[x].determinant_result[a].id + 1);
+                printf("The determinant is %.3e\n", file_mem[x].determinant_result[a].determinant);
+            }
+
+            /** Free allocated memory */
+            free(file_mem[x].determinant_result);
         }
-
-        /** Free allocated memory */
-        free(file_mem[x].determinant_result);
-
+        else{
+            printf("Error Reading File\n");
+        }
         printf("\n");
+
     }
 }
 

@@ -65,9 +65,6 @@ int  matrixProcessed = 0;
 /** \brief Number of Files to be processed **/
 int filesToProcess =0;
 
-/** \brief Number of Files to present Results **/
-int filesToShowResults =0;
-
 int main(int argc, char** argv) {
 
     /** time limits **/
@@ -135,9 +132,6 @@ int main(int argc, char** argv) {
     /** \brief Files to Process */
     filesToProcess=fileid;
 
-    /** \brief Files to Process */
-    filesToShowResults=fileid;
-
     statusWorks = malloc(sizeof(int)*numberWorkers);
 
     /** Workers internal thread id array */
@@ -164,10 +158,8 @@ int main(int argc, char** argv) {
 
         listFiles[i].pFile= fopen(listFiles[i].name, "r");
 
-        if (listFiles[i].pFile == NULL) {
+        if (!listFiles[i].pFile) {
             printf("\nError reading File: %s\n",listFiles[i].name);
-            /**Decrease Number of Files to be used in PrintResults*/
-            filesToShowResults--;
         }
         else{
 
@@ -209,7 +201,7 @@ int main(int argc, char** argv) {
      */
     for (int id = 0; id < filesToProcess; id++) {
 
-        if (!listFiles[id].pFile == NULL) {
+        if (listFiles[id].pFile) {
 
             for (int i = 0; i < listFiles[id].numberOfMatrices; i++) {
 
@@ -250,7 +242,7 @@ int main(int argc, char** argv) {
     t2 += t1-t0;
 
     /** Print Final Results  */
-    PrintResults(filesToShowResults);
+    PrintResults(filesToProcess);
 
     /** Print Elapsed Time */
     printf ("\nElapsed time = %.6f s\n", t2);
