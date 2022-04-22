@@ -41,9 +41,9 @@ double calculateMatrixDeterminant(int orderMatrix,double matrix[orderMatrix][ord
         }
     }
 
-    double determinant=matrix[0][0];
+    double determinant=1;
 
-    for (int x = 1; x < orderMatrix; x++){
+    for (int x = 0; x < orderMatrix; x++){
         determinant*= matrix[x][x];
     }
 
@@ -68,9 +68,7 @@ int filesToProcess =0;
 int main(int argc, char** argv) {
 
     /** time limits **/
-    double t0, t1, t2;
-
-    t2 = 0.0;
+    struct timespec start, finish;
 
     /** \brief Number of Workers **/
     int numberWorkers=0;
@@ -149,7 +147,8 @@ int main(int argc, char** argv) {
     srandom ((unsigned int) getpid ());
 
 
-    t0 = ((double) clock ()) / CLOCKS_PER_SEC;
+    /** Begin of Time measurement */
+    clock_gettime (CLOCK_MONOTONIC_RAW, &start);
 
     /**
      * File Processing to save in Shared Region
@@ -224,8 +223,6 @@ int main(int argc, char** argv) {
     }
 
 
-
-
     /** Waiting for the termination of the Workers threads */
     for (int i = 0; i < numberWorkers; i++)
     { if (pthread_join (tIdWorkers[i], (void *) &status_p) != 0)
@@ -237,15 +234,14 @@ int main(int argc, char** argv) {
         printf ("Worker %u : has terminated with status: %d \n", i, *status_p);
     }
 
-    t1 = ((double) clock ()) / CLOCKS_PER_SEC;
-
-    t2 += t1-t0;
+    /** End of measurement */
+    clock_gettime (CLOCK_MONOTONIC_RAW, &finish);
 
     /** Print Final Results  */
     PrintResults(filesToProcess);
 
     /** Print Elapsed Time */
-    printf ("\nElapsed time = %.6f s\n", t2);
+    printf ("\nElapsed time = %.6f s\n", (finish.tv_nsec - start.tv_nsec) / 1000000000.0);
 }
 
 /**
