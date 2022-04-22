@@ -1,5 +1,5 @@
 # Problem 2
-## Assignment 1 : Problem 2 - Determinant of a Square Matrix
+- Assignment 1 : Problem 2 - Determinant of a Square Matrix
 ### How to Compile
 ``c
 gcc -Wall -O3 -o prog2 main.c fifo.c -lpthread -lm
