@@ -1,3 +1,23 @@
+/**
+ *  \file sharedRegion.h
+ *
+ *  \brief Assignment 1 : Problem 2 - Determinant of a Square Matrix
+ * *
+ *  Shared Region
+ *
+ *  Main Operations:
+ *     \li putFileInfo
+ *     \li putMatrixVal
+ *     \li PrintResults
+ *
+ *  Workers Operations:
+ *     \li getMatrixVal
+ *     \li putResults
+ *
+ *
+ *  \author João Soares (93078) e Pedro Silva (93011)
+ */
+
 #ifndef FIFO_H
 #define FIFO_H
 
