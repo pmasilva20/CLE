@@ -1,3 +1,23 @@
+/**
+ *  \file fifo.c
+ *
+ *  \brief Assignment 1 : Problem 1 - Number of Words, Number of Words starting with a Vowel and Number of Words ending with a Consonant
+ *
+ *  Shared Region
+ *
+ *  Main Operations:
+ *      \li finishedProcessingChunks
+ *      \li getFileText
+ *      \li putChunkText
+ *
+ *  Workers Operations:
+ *      \li hasChunksLeft
+ *      \li putFileText
+ *      \li getChunkText
+ *
+ *  \author João Soares (93078) e Pedro Silva (93011)
+ */
+
 #include <stdbool.h>
 #include <pthread.h>
 #include <errno.h>
@@ -22,6 +42,7 @@ static bool full_file_text;
 /** \brief flag signaling the data transfer region Chunk is full */
 static bool full_text_chunk;
 
+/** \brief Number of File Results Stored in Shared Region */
 static int fileTextCount;
 
 /** \brief insertion pointer for chunk_mem */
@@ -36,21 +57,22 @@ static unsigned int ii_file;
 /** \brief retrieval pointer for files_mem */
 static unsigned int  ri_file;
 
-/** \brief consumers synchronization point when the data transfer region is empty */
+/** \brief consumers synchronization point when the Chunk data transfer region is empty */
 static pthread_cond_t fifoChunkEmpty;
 
+/** \brief producers synchronization point when the Chunk data transfer region is full */
 static pthread_cond_t fifoChunkFull;
 
-/** \brief consumers synchronization point when the data transfer region is empty */
+/** \brief consumers synchronization point when the File data transfer region is empty */
 static pthread_cond_t fifoFileEmpty;
 
+/** \brief producers synchronization point when the File data transfer region is full */
 static pthread_cond_t fifoFileFull;
 
-/** \brief No File Chunks put in yet */
+/** \brief consumers synchronization point when the Chunk data transfer region has no chunks in yet */
 static pthread_cond_t fifoChunksPut;
 
-static bool noChunksPut;
-
+/** \brief flag which signals that the main thread has finished processing all chunks of all files */
 static bool finishedProcessing;
 
 /** \brief flag which warrants that the data transfer region is initialized exactly once */
@@ -59,9 +81,14 @@ static pthread_once_t init = PTHREAD_ONCE_INIT;
 /** \brief locking flag which warrants mutual exclusion inside the monitor */
 static pthread_mutex_t accessCR = PTHREAD_MUTEX_INITIALIZER;
 
+/** \brief Number of Text Chunks in Shared Region */
 static int chunkCount;
 
-
+/**
+ *  \brief Initialization of the data transfer region.
+ *
+ *  Internal monitor operation.
+ */
 static void initialization (void)
 {
     full_text_chunk = false;
@@ -70,7 +97,6 @@ static void initialization (void)
     chunkCount = 0;
     fileTextCount = 0;
     full_file_text = false;
-    noChunksPut = true;
     finishedProcessing = false;
     ii_file = 0;
     ri_file = 0;
@@ -82,26 +108,18 @@ static void initialization (void)
     pthread_cond_init (&fifoChunkFull, NULL);
 }
 
-int getChunkCount(){
-    //Enter monitor
-    pthread_mutex_lock (&accessCR);
-
-    pthread_once (&init, initialization);
-
-    int count = chunkCount;
-    pthread_mutex_unlock (&accessCR);
-    return count;
-}
+/**
+ * \brief Check if there are any chunks in Shared Region to process or if main is still processing new chunks.
+ * If there are no chunks in Shared Region but main is still processing them, then it waits until a chunks is put.
+ *
+ * Operation carried out by the workers.
+ * @return True if there are chunks to be processed still
+ */
 bool hasChunksLeft(){
-    //Enter monitor
+
     pthread_mutex_lock (&accessCR);
 
     pthread_once (&init, initialization);
-
-    //If !finichedProcessing && chunkCount == 0 -> wait in condition
-        //Get freed when processing of one chunk is done
-    //if chunkCount > 0 then it goes foward and process one, it will only block if !finished processing
-    //return !finishedProcessing
 
     if(!finishedProcessing && chunkCount == 0){
         pthread_cond_wait (&fifoChunksPut, &accessCR);
@@ -111,10 +129,15 @@ bool hasChunksLeft(){
 
     return !finishedProcessing || chunkCount > 0;
 }
-
+/**
+ * \brief Signal that all text files have been read by main and divided into chunks.
+ * Signals any awaiting worker thread.
+ *
+ * Operation carried out by main.
+ */
 void finishedProcessingChunks(){
     pthread_mutex_lock (&accessCR);
-    //Init only once
+
     pthread_once (&init, initialization);
     finishedProcessing = true;
     pthread_cond_broadcast(&fifoChunksPut);
@@ -122,12 +145,18 @@ void finishedProcessingChunks(){
     pthread_mutex_unlock (&accessCR);
 }
 
-
+/**
+ * \brief Retrieve a stored File information after all chunks have been processed.
+ *
+ * Operation carried out by main.
+ * @param fileId File Id of the file that is to be retrieved
+ * @return File_text structure with file information
+ */
 struct File_text* getFileText(int fileId){
-    //Check if I can enter
+
     if ((statusProd = pthread_mutex_lock (&accessCR)) != 0)                                   /* enter monitor */
     {
-        errno = statusProd;                                                            /* save error in errno */
+        errno = statusProd;                                                                         /* save error in errno */
         perror ("error on entering monitor(CF)");
         statusProd = EXIT_FAILURE;
         pthread_exit (statusProd);
@@ -147,6 +176,18 @@ struct File_text* getFileText(int fileId){
     return NULL;
 }
 
+/**
+ * \brief Store information relating to the processing of a Text Chunk in the Shared Region.
+ * If information for this file has not been stored in Shared Region already, then a new structure is allocated.
+ * If information for this file has been stored in Shared Region already, then chunk information is added.
+ * Operation is carried out by the workers.
+ *
+ * @param nWords Number of words in chunk
+ * @param nVowelStartWords Number of words starting with a vowel in chunk
+ * @param nConsonantEndWord Number of words ending with a consonant in chunk
+ * @param fileID File Id that identifies file corresponding to chunk
+ * @param filename File name of file that corresponds to chunk
+ */
 void putFileText(int nWords, int nVowelStartWords, int nConsonantEndWord, int fileID, char* filename){
 
     //Check if I can enter
@@ -212,7 +253,13 @@ void putFileText(int nWords, int nVowelStartWords, int nConsonantEndWord, int fi
     pthread_mutex_unlock (&accessCR);
 }
 
-
+/**
+ * \brief Retrieve a stored Text Chunk to be processed.
+ *
+ * Operation carried out by the workers.
+ * @param fileId File Id of the file that is to be retrieved
+ * @return File_text structure with file information
+ */
 struct Chunk_text* getChunkText(){
     struct Chunk_text* chunk;
     //Enter monitor
@@ -240,6 +287,10 @@ struct Chunk_text* getChunkText(){
     return chunk;
 }
 
+/**
+ * \brief Insert a Text Chunk into Shared Region
+ * @param chunk Chunk to be inserted
+ */
 void putChunkText(struct Chunk_text chunk){
 
     //Check if I can enter
@@ -270,7 +321,6 @@ void putChunkText(struct Chunk_text chunk){
 
     full_text_chunk = (ii_chunk == ri_chunk);
 
-    noChunksPut = false;
     pthread_cond_signal(&fifoChunksPut);
     pthread_cond_signal (&fifoChunkEmpty);
     pthread_mutex_unlock (&accessCR);

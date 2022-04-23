@@ -15,10 +15,10 @@
 #include <unistd.h>
 #include <pthread.h>
 #include "structures.h"
-#include "func.h"
-#include "fifo.h"
+#include "assign1_functions.h"
+#include "shared_region.h"
 #include "prob1_processing.h"
-#include "worker.h"
+#include "assign1_worker.h"
 
 
 /** \brief consumer threads return status array */
@@ -143,11 +143,11 @@ int main (int argc, char** argv){
     for(int i = 0; i < fileid; i++){
         struct File_text* text = getFileText(i);
         if(text != NULL){
+            printf("\n");
             printf("File name: %s\n",(*text).name);
             printf("Total number of words = %d\n",(*text).nWords);
             printf("N. of words beginning with a vowel = %d\n",(*text).nVowelStartWords);
             printf("N. of words ending with a consonant = %d\n",(*text).nConsonantEndWord);
-            printf("\n");
         }
         else printf("Error retrieving files statistics for file %d",i);
     }
@@ -166,7 +166,7 @@ static void *worker (void *par)
     /** Worker ID */
     unsigned int id = *((unsigned int *) par);
 
-    printf("Worker %d ready!\n",id);
+    //printf("Worker %d ready!\n",id);
 
     /** While there are any chunks to process*/
     while(hasChunksLeft()){
@@ -178,7 +178,7 @@ static void *worker (void *par)
     }
     /** Exit with success after handling all chunks*/
     statusWorks[id] = EXIT_SUCCESS;
-    printf("Worker Exit\n");
+    //printf("Worker Exit\n");
     pthread_exit (&statusWorks[id]);
 }
 

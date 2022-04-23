@@ -1,6 +1,21 @@
+/**
+ *  \file prob1_processing.c
+ *
+ *  \brief Assignment 1 : Problem 1 - Number of Words, Number of Words starting with a Vowel and Number of Words ending with a Consonant
+ *
+ *  Functions used for Problem 1
+ *
+ *  \author João Soares (93078) e Pedro Silva (93011)
+ */
+
+
 #include <stdbool.h>
 
-
+/**
+ * \brief Detect how many bytes need to be read for UTF-8 by taking into account first byte
+ * @param character First byte of UTF-8 character
+ * @return Number of bytes that need to be read not including the first byte
+ */
 int detectBytesNeeded(int character){
     if(character < 192){
         return 0;
@@ -18,7 +33,11 @@ int detectBytesNeeded(int character){
         return 4;
     }
 }
-
+/**
+ * Check if character is a continuation symbol that connects characters into a single word
+ * @param character Character to check
+ * @return True if a continuation symbol, false otherwise
+ */
 bool checkForContinuationSymbols(int character){
     if(character ==  0x27 
         || character == 0x60
@@ -30,19 +49,24 @@ bool checkForContinuationSymbols(int character){
         return false;
 }
 
-
+/**
+ * Check if character is a special symbol that marks the end of a word
+ * @param character Character to compare to
+ * @return True if a special symbol, false otherwise
+ */
 bool checkForSpecialSymbols(int character){
-   if(character == 0x20                              // space
-        || character == 0x9                            // \t
-        || character == 0xA                            // \n
-        || character == 0xD                            // \r
-        || character == 0x5b                           // [
-        || character == 0x5d                           // ]
-        || character == 0x3f                           // ?
-        || character == 0xc2ab                         // «
-        || character == 0xc2bb                         // »
-        || character == 0xe280a6                       // …
-        || 0x21 == character || character == 0x22         // ! "
+   if(character == 0x20                                   // space
+        || character == 0x9                               // \t
+        || character == 0xA                               // \n
+        || character == 0xD                               // \r
+        || character == 0x5b                              // [
+        || character == 0x5d                              // ]
+        || character == 0x3f                              // ?
+        || character == 0xc2ab                            // «
+        || character == 0xc2bb                            // »
+        || character == 0xe280a6                          // …
+        || 0x21 == character                              // !
+        || character == 0x22                              // "
         || 0x28 == character || character == 0x29         // ( )
         || (0x2c <= character && character <= 0x2e)       // , - .
         || 0x3a == character || character == 0x3b         // : ;
@@ -54,7 +78,11 @@ bool checkForSpecialSymbols(int character){
         return false;
 }
 
-
+/**
+ * Checks if character is a vowel(including accented vowels)
+ * @param character Character to compare to
+ * @return True if a vowel, false otherwise
+ */
 int checkVowels(int character){
    if(character == 0x41                            // A
         || character == 0x45                         // E
@@ -81,7 +109,11 @@ int checkVowels(int character){
         }
         return false;
 }
-
+/**
+ * Checks if character is a consonant(including the cedilla character)
+ * @param character Character to compare to
+ * @return True if a consonant, false otherwise
+ */
 int checkConsonants(int character){
     if(character == 0xc387                      // Ç
         || character == 0xc3a7                   // ç

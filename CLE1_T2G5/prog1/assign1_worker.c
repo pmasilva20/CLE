@@ -1,12 +1,28 @@
+/**
+ *  \file worker.c
+ *
+ *  \brief Assignment 1 : Problem 1 - Number of Words, Number of Words starting with a Vowel and Number of Words ending with a Consonant
+ *
+ *  Functions used by worker in Assignment 1
+ *
+ *  \author João Soares (93078) e Pedro Silva (93011)
+ */
+
 #include <stdbool.h>
-#include <stdio.h>
 #include "structures.h"
-#include "fifo.h"
+#include "shared_region.h"
 #include "prob1_processing.h"
 
-
+/**
+ * \brief Process a chunk of text and store the results in Shared Region
+ * Obtains the number of words, number of words starting with a vowel and the number of words starting with a consonant.
+ *
+ * Operation carried out by the workers.
+ * @param chunk Chunk of Text to be processed
+ */
 void processChunk(struct Chunk_text chunk){
-    //Do prob1 processing
+
+    //Results Variables
     int nWords = 0;
     int nVowelStartWords = 0;
     int nConsonantEndWord = 0;

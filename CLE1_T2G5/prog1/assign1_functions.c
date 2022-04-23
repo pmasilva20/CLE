@@ -1,10 +1,20 @@
+/**
+ *  \file assign1_functions.c
+ *
+ *  \brief Assignment 1 : Problem 1 - Number of Words, Number of Words starting with a Vowel and Number of Words ending with a Consonant
+ *
+ *  Functions used in Assignment 1 by Main Thread
+ *
+ *  \author João Soares (93078) e Pedro Silva (93011)
+ */
+
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include "prob1_processing.h"
 #include "structures.h"
-#include "fifo.h"
+#include "shared_region.h"
 
 /**
  * \brief Reads UTF-8 encoded characters from a Text File and makes Chunks out of them
@@ -60,8 +70,7 @@ int makeChunks(char* filename,int fileId, int chunkSize){
             chunkCount = chunkCount + 1;
         }
         else{
-            //TODO:look at this
-            //Realloc 4 more byte of memory, we do this until word finishes
+            //Reallocate 4 more byte of memory, do this until current word has finished being stored
             //printf("Realloc Have %d need %d\n",chunkCount,chunkSize);
             chunkCount = chunkCount + 1;
             int* newPChunkChars = realloc(pChunkChars,   chunkCount * sizeof(int));
@@ -70,32 +79,24 @@ int makeChunks(char* filename,int fileId, int chunkSize){
 
         }
 
-        //Check if inWord
         if(inWord){
-            //If white space or separation or punctuation simbol -> inWord is False
-            //if lastchar is consonant
             if(checkForSpecialSymbols(character)){
                 inWord = false;
-                //Have read either chunksize or more, can finish chunk
+                //After having read chunkSize or more, finish chunk and store it in Shared Region
                 if(chunkCount >= chunkSize){
                     chunk.chunk = pChunkChars;
                     chunk.fileId = fileId;
                     chunk.count = chunkCount;
                     chunk.filename = filename;
-                    //TODO:Save to either an array or just put in SH directrlly
                     //printf("Put chunk in\n");
                     putChunkText(chunk);
-                    //Alloc mem for next chunk
                     chunkCount = 0;
+                    //Allocated more memory for next chunk
                     pChunkChars = (int*) calloc(chunkSize, sizeof(int));
                 }
             }
         }
         else{
-            //If white space or separation or punctuation simbol -> nothing
-            // alpha or ` or ' or ‘ or ’
-            //If alphanumeric character or underscore or apostrophe -> inWord is True
-            //nWords += 1, checkVowel() -> nWordsBV+=1, lastChar = character
             if(checkVowels(character)
                || checkConsonants(character)
                || (character >= '0' && character <= '9')
@@ -105,16 +106,13 @@ int makeChunks(char* filename,int fileId, int chunkSize){
         }
     } while ((character = getc(pFile)) != EOF);
 
-    //Read last chunk before finishing with file
+    //Store last read chunk before finishing reading the Text File
     chunk.chunk = pChunkChars;
     chunk.fileId = fileId;
     chunk.count = chunkCount;
     chunk.filename = filename;
     chunkCount++;
-    //TODO:Save to either an array or just put in SH directrlly
-    //printf("Put Last chunk in\n");
     putChunkText(chunk);
-    printf("Final Num of chunks %d\n",chunkCount);
 
     fclose(pFile);
     return chunkCount;
