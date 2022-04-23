@@ -1,7 +1,3 @@
-//
-// Created by pmasilva20 on 19-04-2022.
-//
-
 #ifndef PROG1_FIFO_H
 #define PROG1_FIFO_H
 
@@ -12,7 +8,7 @@
 struct Chunk_text* getChunkText();
 extern int putChunkText(struct Chunk_text chunk);
 int getChunkCount();
-void putFileText(int nWords, int nVowelStartWords, int nConsonantEndWord, int fileID);
+void putFileText(int nWords, int nVowelStartWords, int nConsonantEndWord, int fileID, char* filename);
 struct File_text* getFileText(int fileId);
 void finishedProcessingChunks();
 bool hasChunksLeft();

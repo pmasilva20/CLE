@@ -1,7 +1,6 @@
 #ifndef PROG1_STRUCTURES_H
 #define PROG1_STRUCTURES_H
 
-
 struct File_text{
     char* name;
     int nWords;
@@ -11,6 +10,7 @@ struct File_text{
 };
 
 struct Chunk_text{
+    char* filename;
     int fileId;
     int* chunk;
     int count;

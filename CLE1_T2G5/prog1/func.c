@@ -6,8 +6,15 @@
 #include "structures.h"
 #include "fifo.h"
 
-//Read file and return chunk structure or put in SH direct
-//Returns num of chunks made for file
+/**
+ * \brief Reads UTF-8 encoded characters from a Text File and makes Chunks out of them
+ * Chunks are stored in order so they surpass chunkSize but also end in a non word character
+ * All chunks are stored in the Shared Region
+ * @param filename Filename of the Text File to be read
+ * @param fileId File id that identifies this file
+ * @param chunkSize Minimum num of characters in each chunk
+ * @return Num of chunks made
+ */
 int makeChunks(char* filename,int fileId, int chunkSize){
     struct Chunk_text chunk;
 
@@ -18,6 +25,7 @@ int makeChunks(char* filename,int fileId, int chunkSize){
     int character;
 
     FILE* pFile;
+
     pFile = fopen(filename,"r");
     int chunkCount = 0;
     //Initial malloc for a single chunk
@@ -47,14 +55,14 @@ int makeChunks(char* filename,int fileId, int chunkSize){
 
         //Store character in chunk array
         if(chunkCount < chunkSize){
-            printf("Puttin in chunk %d vs %d\n",chunkCount,chunkSize);
+            //printf("Puttin in chunk %d vs %d\n",chunkCount,chunkSize);
             pChunkChars[chunkCount] = character;
             chunkCount = chunkCount + 1;
         }
         else{
             //TODO:look at this
             //Realloc 4 more byte of memory, we do this until word finishes
-            printf("Realloc Have %d need %d\n",chunkCount,chunkSize);
+            //printf("Realloc Have %d need %d\n",chunkCount,chunkSize);
             chunkCount = chunkCount + 1;
             int* newPChunkChars = realloc(pChunkChars,   chunkCount * sizeof(int));
             pChunkChars = newPChunkChars;
@@ -73,8 +81,9 @@ int makeChunks(char* filename,int fileId, int chunkSize){
                     chunk.chunk = pChunkChars;
                     chunk.fileId = fileId;
                     chunk.count = chunkCount;
+                    chunk.filename = filename;
                     //TODO:Save to either an array or just put in SH directrlly
-                    printf("Put chunk in\n");
+                    //printf("Put chunk in\n");
                     putChunkText(chunk);
                     //Alloc mem for next chunk
                     chunkCount = 0;
@@ -100,9 +109,12 @@ int makeChunks(char* filename,int fileId, int chunkSize){
     chunk.chunk = pChunkChars;
     chunk.fileId = fileId;
     chunk.count = chunkCount;
+    chunk.filename = filename;
+    chunkCount++;
     //TODO:Save to either an array or just put in SH directrlly
-    printf("Put Last chunk in\n");
+    //printf("Put Last chunk in\n");
     putChunkText(chunk);
+    printf("Final Num of chunks %d\n",chunkCount);
 
     fclose(pFile);
     return chunkCount;

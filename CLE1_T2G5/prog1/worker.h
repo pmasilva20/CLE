@@ -6,7 +6,6 @@
 #define PROG1_WORKER_H
 
 void processChunk(struct Chunk_text chunk);
-static void *worker (void *par);
 
 
 #endif //PROG1_WORKER_H

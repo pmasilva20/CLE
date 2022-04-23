@@ -1,7 +1,5 @@
 #include <stdbool.h>
 #include <stdio.h>
-#include <pthread.h>
-#include <stdlib.h>
 #include "structures.h"
 #include "fifo.h"
 #include "prob1_processing.h"
@@ -62,33 +60,13 @@ void processChunk(struct Chunk_text chunk){
             }
         }
     }
-    printf("\n");
-    printf("Processed a chunk\n");
-    printf("For File %d Nwords %d\n",chunk.fileId,nWords);
-    printf("For File %d NVowelwords %d\n",chunk.fileId,nVowelStartWords);
-    printf("For File %d NConsonantswords %d\n",chunk.fileId,nConsonantEndWord);
-    printf("\n");
+//    printf("\n");
+//    printf("Processed a chunk\n");
+//    printf("For File %d Nwords %d\n",chunk.fileId,nWords);
+//    printf("For File %d NVowelwords %d\n",chunk.fileId,nVowelStartWords);
+//    printf("For File %d NConsonantswords %d\n",chunk.fileId,nConsonantEndWord);
+//    printf("\n");
 
     //Put to fifo.c
-    putFileText(nWords, nVowelStartWords, nConsonantEndWord, chunk.fileId);
+    putFileText(nWords, nVowelStartWords, nConsonantEndWord, chunk.fileId, chunk.filename);
 }
-
-
-void *worker (void *par)
-{
-    unsigned int id = *((unsigned int *) par);                                                          /* consumer id */
-
-    printf("Worker %d ready!\n",id);
-
-    while(hasChunksLeft()){
-        //Get chunk
-        struct Chunk_text* chunk = getChunkText();
-        if(chunk != NULL)processChunk(*chunk);
-        printf("Worker:%d Remaining chunksToProcess %d\n",id,getChunkCount());
-    }
-    //statusWorks[id] = EXIT_SUCCESS;
-    printf("Worker Exit\n");
-    //pthread_exit (&statusWorks[id]);
-    pthread_exit (EXIT_SUCCESS);
-}
-

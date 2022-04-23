@@ -1,9 +1,18 @@
+/**
+ *  \file main.c
+ *
+ *  \brief Assignment 1 : Problem 1 - Number of Words, Number of Words starting with a Vowel and Number of Words ending with a Consonant
+ *
+ *  Main Program
+ *
+ *  \author João Soares (93078) e Pedro Silva (93011)
+ */
+
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <libgen.h>
 #include <unistd.h>
-#include <string.h>
 #include <pthread.h>
 #include "structures.h"
 #include "func.h"
@@ -15,51 +24,46 @@
 /** \brief consumer threads return status array */
 int *statusWorks;
 
-
-
 static void printUsage (char *cmdName);
+static void *worker (void *par);
 
 
 int main (int argc, char** argv){
+
+    /** time limits **/
+    struct timespec start, finish;
+
+    /** \brief Number of Worker Threads */
+    int numberWorkers = 5;
+
+    /** \brief  List of Files Names**/
+    char* fileNames[argc];
+
+    /** \brief File ID */
+    int fileid=0;
+
+    /** selected option */
     int opt;
-    int index;
-    int fCount = 0;
-    int numberWorkers = 10;
-
-    char* fName = "no name";
-    char* files[argc];
-    char* next;
-  
-    double time0, time1, timeTotal;
-
-    timeTotal = 0.0;
-  
-   // int opterr = 0;
-    do{
-        switch ((opt = getopt(argc, argv, "f:h"))) {
-            case 'f': /* file name */
-                index = optind - 1;
-                while(index < argc){
-                    next = strdup(argv[index]);
-                    index++;
-                    if(next[0] != '-'){
-                      files[fCount++] = next;  
-                    }
-                    else break;
-                }
-                break;
-
-
+    opterr = 0;
+    /**
+     * Command Line Processing
+     */
+    do {
+        switch ((opt = getopt(argc, argv, ":f:t:h"))) {
+            case 'f':
                 if (optarg[0] == '-') {
                     fprintf(stderr, "%s: file name is missing\n", basename(argv[0]));
                     printUsage(basename(argv[0]));
                     return EXIT_FAILURE;
                 }
-                fName = optarg;
-                printf("Read %s\n",fName);
-                //int fnstart = optind - 1;
+                /** Copy Filename*/
+                fileNames[fileid] = optarg;
+                /** Update fileid */
+                fileid++;
 
-
+                break;
+            case 't':
+                numberWorkers = atoi(optarg);
                 break;
             case 'h' : /* help mode */
                 printUsage(basename(argv[0]));
@@ -70,8 +74,7 @@ int main (int argc, char** argv){
                 return EXIT_FAILURE;
             case -1: break;
         }
-
-    } while(opt != -1);
+    } while (opt != -1);
 
     if (argc == 1){
         fprintf (stderr, "%s: invalid format\n", basename (argv[0]));
@@ -79,17 +82,17 @@ int main (int argc, char** argv){
         return EXIT_FAILURE;
     }
 
-    printf("%s\n",files[0]);
 
-
-    //Make N worker threads
+    /** Workers status array */
     statusWorks = malloc(sizeof(int)*numberWorkers);
 
+    /** Workers internal thread id array */
     pthread_t tIdWorkers[numberWorkers];
 
-    //Id's
+    /** Workers application defined thread id array*/
     unsigned int works[numberWorkers];
 
+    /** Pointer to execution status */
     int *status_p;
 
     for (int i = 0; i < numberWorkers; i++)
@@ -97,9 +100,14 @@ int main (int argc, char** argv){
 
     srandom ((unsigned int) getpid ());
 
+    /** Begin of Time measurement */
+    clock_gettime (CLOCK_MONOTONIC_RAW, &start);
 
-    //Inicializar Workers
+    /**
+     * Generation of intervening Workers threads
+     */
     for (int i = 0; i < numberWorkers; i++) {
+
         if (pthread_create(&tIdWorkers[i], NULL, worker, &works[i]) !=0)
         {
             perror("error on creating thread worker");
@@ -109,40 +117,70 @@ int main (int argc, char** argv){
             printf("Thread Worker Created %d !\n", i);
         }
     }
-
-
-
-
-
-    //TODO:Look at parameters
-    makeChunks("../text4.txt",10,10);
+    /**
+     * For each file make text chunks taking into account variable chunk size
+     * Store each chunk in Shared Region
+     */
+    for(int i = 0; i < fileid; i++){
+        makeChunks(fileNames[i],i,10);
+    }
+    /**Signalize any waiting workers that all chunks have been made by main */
     finishedProcessingChunks();
 
 
-    //Join all threads and then get all results from SR
+    /** Waiting for the termination of the Workers threads */
     for(int i = 0; i < numberWorkers; i++){
         if (pthread_join (tIdWorkers[i], (void *) &status_p) != 0){
             perror ("error on waiting for thread producer");
             exit (EXIT_FAILURE);
         }
         printf ("thread worker, with id %u, has terminated\n", i);
-        //printf ("its status was %d\n", *status_p);
     }
-    for(int i = 0; i < 1; i++){
-        struct File_text* text = getFileText(10);
-        if(text != NULL){
-            printf("File:%d\n",(*text).fileId);
-            printf("Words:%d\n",(*text).nWords);
-            printf("Vowel words:%d\n",(*text).nVowelStartWords);
-            printf("Consonant words:%d\n",(*text).nConsonantEndWord);
-        }
-        else printf("Error retrieving files statistics for file %d",10);
+    /** End of measurement */
+    clock_gettime (CLOCK_MONOTONIC_RAW, &finish);
 
+    /** Get all Files statistics and print to console */
+    for(int i = 0; i < fileid; i++){
+        struct File_text* text = getFileText(i);
+        if(text != NULL){
+            printf("File name: %s\n",(*text).name);
+            printf("Total number of words = %d\n",(*text).nWords);
+            printf("N. of words beginning with a vowel = %d\n",(*text).nVowelStartWords);
+            printf("N. of words ending with a consonant = %d\n",(*text).nConsonantEndWord);
+            printf("\n");
+        }
+        else printf("Error retrieving files statistics for file %d",i);
     }
+
+    /** Print Elapsed Time */
+    printf ("\nElapsed time = %.6f s\n",  (finish.tv_sec - start.tv_sec) / 1.0 + (finish.tv_nsec - start.tv_nsec) / 1000000000.0);
 
 }
 
+/**
+ * \brief Worker Function checks if there's any Text Chunks to process
+ * @param par A pointer to application defined worker identification
+ */
+static void *worker (void *par)
+{
+    /** Worker ID */
+    unsigned int id = *((unsigned int *) par);
 
+    printf("Worker %d ready!\n",id);
+
+    /** While there are any chunks to process*/
+    while(hasChunksLeft()){
+        /** Try to acquire a Text Chunk*/
+        struct Chunk_text* chunk = getChunkText();
+        /** Process Text Chunk and store results in Shared Region*/
+        if(chunk != NULL)processChunk(*chunk);
+        //printf("Worker:%d Remaining chunksToProcess %d\n",id,getChunkCount());
+    }
+    /** Exit with success after handling all chunks*/
+    statusWorks[id] = EXIT_SUCCESS;
+    printf("Worker Exit\n");
+    pthread_exit (&statusWorks[id]);
+}
 
 static void printUsage (char *cmdName)
 {

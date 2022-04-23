@@ -12,6 +12,7 @@ add_executable(prog1
         func.h
         prob1_processing.c
         prob1_processing.h
+        probConst.h
         structures.c
         structures.h fifo.c fifo.h worker.c worker.h)
 

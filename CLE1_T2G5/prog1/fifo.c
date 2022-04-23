@@ -1,24 +1,20 @@
-//
-// Created by pmasilva20 on 19-04-2022.
-//
 #include <stdbool.h>
 #include <pthread.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "structures.h"
-
-
+#include "probConst.h"
 
 
 /** \brief producer threads return status array */
 extern int statusProd = 0;
 
 /** \brief Chunks storage region */
-static struct Chunk_text chunk_mem[100];
+static struct Chunk_text chunk_mem[K];
 
 /** \brief Files Text storage region */
-static struct File_text files_mem[100];
+static struct File_text files_mem[N];
 
 /** \brief flag signaling the data transfer region File Text is full */
 static bool full_file_text;
@@ -128,14 +124,20 @@ void finishedProcessingChunks(){
 
 
 struct File_text* getFileText(int fileId){
-    struct File_text file_text;
-    //Enter monitor
-    pthread_mutex_lock (&accessCR);
+    //Check if I can enter
+    if ((statusProd = pthread_mutex_lock (&accessCR)) != 0)                                   /* enter monitor */
+    {
+        errno = statusProd;                                                            /* save error in errno */
+        perror ("error on entering monitor(CF)");
+        statusProd = EXIT_FAILURE;
+        pthread_exit (statusProd);
+    }
 
     pthread_once (&init, initialization);
 
     for(int i = 0; i < fileTextCount; i++){
         if(files_mem[i].fileId == fileId){
+            pthread_mutex_unlock (&accessCR);
             return &files_mem[i];
         }
     }
@@ -145,7 +147,7 @@ struct File_text* getFileText(int fileId){
     return NULL;
 }
 
-void putFileText(int nWords, int nVowelStartWords, int nConsonantEndWord, int fileID){
+void putFileText(int nWords, int nVowelStartWords, int nConsonantEndWord, int fileID, char* filename){
 
     //Check if I can enter
     if ((statusProd = pthread_mutex_lock (&accessCR)) != 0)                                   /* enter monitor */
@@ -169,34 +171,37 @@ void putFileText(int nWords, int nVowelStartWords, int nConsonantEndWord, int fi
         }
     };
 
-    struct File_text text;
+    struct File_text* text;
     bool foundText = false;
     int idxFound = -1;
     for(int i = 0; i < fileTextCount; i++){
         if(files_mem[i].fileId == fileID){
-            text = files_mem[i];
+            text = &files_mem[i];
             idxFound = i;
             foundText = true;
             break;
         }
     }
+
     if(foundText){
-        text.nConsonantEndWord += nConsonantEndWord;
-        text.nVowelStartWords += nVowelStartWords;
-        text.nWords += nWords;
-        text.fileId = fileID;
-        files_mem[idxFound] = text;
+        (*text).nConsonantEndWord += nConsonantEndWord;
+        (*text).nVowelStartWords += nVowelStartWords;
+        (*text).nWords += nWords;
+        (*text).fileId = fileID;
+        (*text).name = filename;
     }
     else{
-        text.nConsonantEndWord = nConsonantEndWord;
-        text.nVowelStartWords = nVowelStartWords;
-        text.nWords = nWords;
-        text.fileId = fileID;
+        struct File_text newText;
+        newText.nConsonantEndWord = nConsonantEndWord;
+        newText.nVowelStartWords = nVowelStartWords;
+        newText.nWords = nWords;
+        newText.fileId = fileID;
+        newText.name = filename;
 
         fileTextCount++;
-        files_mem[ii_file]= text;
+        files_mem[ii_file]= newText;
 
-        ii_file= (ii_file+1)%100;
+        ii_file= (ii_file+1)%N;
 
         full_file_text = (ii_file == ri_file);
     }
@@ -226,7 +231,7 @@ struct Chunk_text* getChunkText(){
 
     chunkCount--;
     chunk = &chunk_mem[ri_chunk];
-    ri_chunk = (ri_chunk + 1) % 100;
+    ri_chunk = (ri_chunk + 1) % K;
     full_text_chunk = false;
 
     pthread_cond_signal (&fifoChunkFull);
@@ -261,7 +266,7 @@ void putChunkText(struct Chunk_text chunk){
     chunkCount++;
     chunk_mem[ii_chunk]= chunk;
 
-    ii_chunk= (ii_chunk+1)%100;
+    ii_chunk= (ii_chunk+1)%K;
 
     full_text_chunk = (ii_chunk == ri_chunk);
 
