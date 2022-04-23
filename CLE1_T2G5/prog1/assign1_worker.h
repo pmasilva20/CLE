@@ -18,6 +18,6 @@
  * Operation carried out by the workers.
  * @param chunk Chunk of Text to be processed
  */
-void processChunk(struct Chunk_text chunk);
+void processChunk(struct ChunkText chunk, unsigned int consId);
 
 #endif //PROG1_ASSIGN1_WORKER_H

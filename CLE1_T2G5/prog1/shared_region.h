@@ -28,15 +28,15 @@
  *
  * Operation carried out by the workers.
  * @param fileId File Id of the file that is to be retrieved
- * @return File_text structure with file information
+ * @return FileText structure with file information
  */
-struct Chunk_text* getChunkText();
+struct ChunkText *getChunkText(unsigned int consId);
 
 /**
  * \brief Insert a Text Chunk into Shared Region
  * @param chunk Chunk to be inserted
  */
-extern int putChunkText(struct Chunk_text chunk);
+extern int putChunkText(struct ChunkText chunk);
 
 /**
  * \brief Store information relating to the processing of a Text Chunk in the Shared Region.
@@ -50,16 +50,16 @@ extern int putChunkText(struct Chunk_text chunk);
  * @param fileID File Id that identifies file corresponding to chunk
  * @param filename File name of file that corresponds to chunk
  */
-void putFileText(int nWords, int nVowelStartWords, int nConsonantEndWord, int fileID, char* filename);
+void putFileText(int nWords, int nVowelStartWords, int nConsonantEndWord, int fileID, char *filename, unsigned int consId);
 
 /**
  * \brief Retrieve a stored File information after all chunks have been processed.
  *
  * Operation carried out by main.
  * @param fileId File Id of the file that is to be retrieved
- * @return File_text structure with file information
+ * @return FileText structure with file information
  */
-struct File_text* getFileText(int fileId);
+struct FileText* getFileText(int fileId);
 
 /**
  * \brief Signal that all text files have been read by main and divided into chunks.
@@ -76,6 +76,6 @@ void finishedProcessingChunks();
  * Operation carried out by the workers.
  * @return True if there are chunks to be processed still
  */
-bool hasChunksLeft();
+bool hasChunksLeft(unsigned int consId);
 
 #endif //PROG1_SHARED_REGION_H

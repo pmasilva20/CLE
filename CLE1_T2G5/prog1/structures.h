@@ -12,7 +12,7 @@
 #define PROG1_STRUCTURES_H
 
 /** Structure of File results */
-struct File_text{
+struct FileText{
     char* name;
     int nWords;
     int nVowelStartWords;
@@ -21,7 +21,7 @@ struct File_text{
 };
 
 /** Structure of Chunk of Text from a file */
-struct Chunk_text{
+struct ChunkText{
     char* filename;
     int fileId;
     int* chunk;

@@ -13,3 +13,5 @@ gcc -Wall -O3 -o prog1 main.c assign1_functions.c prob1_processing.c shared_regi
 ``
 ./prog1 -f text0.txt -t 10
 ``
+### Notes
+- Some customizable parameters can be changed the probConst.h file.

@@ -18,38 +18,34 @@
  * Obtains the number of words, number of words starting with a vowel and the number of words starting with a consonant.
  *
  * Operation carried out by the workers.
+ * @param consId Id of worker
  * @param chunk Chunk of Text to be processed
  */
-void processChunk(struct Chunk_text chunk){
+void processChunk(struct ChunkText chunk, unsigned int consId) {
 
-    //Results Variables
+    /** Results Variables */
     int nWords = 0;
     int nVowelStartWords = 0;
     int nConsonantEndWord = 0;
 
-    //State Flags
+    /** State Flags */
     bool inWord = false;
 
-    //Read files
+    /** Current character being read from chunk */
     int character;
+    /** Previous character being read from chunk */
     int previousCharacter = 0;
 
     for(int i = 0; i < chunk.count; i++){
         character = chunk.chunk[i];
 
-        //Check if inWord
         if(inWord){
-            //If white space or separation or punctuation simbol -> inWord is False
-            //if lastchar is consonant
             if(checkForSpecialSymbols(character)){
                 inWord = false;
                 if(checkConsonants(previousCharacter)){
                     nConsonantEndWord+=1;
                 }
             }
-            // alpha or ` or ' or ‘ or ’
-            //If alphanumeric character or underscore or apostrophe -> nothing
-            //lastChar = character
             else if(checkVowels(character)
                     || checkConsonants(character)
                     || (character >= '0' && character <= '9')
@@ -59,10 +55,6 @@ void processChunk(struct Chunk_text chunk){
             }
         }
         else{
-            //If white space or separation or punctuation simbol -> nothing
-            // alpha or ` or ' or ‘ or ’
-            //If alphanumeric character or underscore or apostrophe -> inWord is True
-            //nWords += 1, checkVowel() -> nWordsBV+=1, lastChar = character
             if(checkVowels(character)
                || checkConsonants(character)
                || (character >= '0' && character <= '9')
@@ -76,13 +68,7 @@ void processChunk(struct Chunk_text chunk){
             }
         }
     }
-//    printf("\n");
-//    printf("Processed a chunk\n");
-//    printf("For File %d Nwords %d\n",chunk.fileId,nWords);
-//    printf("For File %d NVowelwords %d\n",chunk.fileId,nVowelStartWords);
-//    printf("For File %d NConsonantswords %d\n",chunk.fileId,nConsonantEndWord);
-//    printf("\n");
 
-    //Put to fifo.c
-    putFileText(nWords, nVowelStartWords, nConsonantEndWord, chunk.fileId, chunk.filename);
+    /** Store results in Shared Region */
+    putFileText(nWords, nVowelStartWords, nConsonantEndWord, chunk.fileId, chunk.filename, consId);
 }

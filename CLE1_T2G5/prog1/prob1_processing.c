@@ -39,10 +39,10 @@ int detectBytesNeeded(int character){
  * @return True if a continuation symbol, false otherwise
  */
 bool checkForContinuationSymbols(int character){
-    if(character ==  0x27 
-        || character == 0x60
-        || character == 0xE28098 
-        || character == 0xE28099)
+    if(character ==  0x27         // '
+        || character == 0xE28098  // ‘
+        || character == 0xE28099  // ’
+        || character == 0x60)     // `
         {
             return true;
         }
@@ -59,19 +59,25 @@ bool checkForSpecialSymbols(int character){
         || character == 0x9                               // \t
         || character == 0xA                               // \n
         || character == 0xD                               // \r
+        || character == 0xe280a6                          // …
+        || character == 0x21                              // !
+        || character == 0x3f                              // ?
         || character == 0x5b                              // [
         || character == 0x5d                              // ]
-        || character == 0x3f                              // ?
+        || character == 0xe2809c                          // “
+        || character == 0xe2809d                          // ”
+        || character == 0x2e                              // .
+        || character == 0x3a                              // :
+        || character == 0x3b                              // ;
         || character == 0xc2ab                            // «
         || character == 0xc2bb                            // »
-        || character == 0xe280a6                          // …
-        || 0x21 == character                              // !
         || character == 0x22                              // "
-        || 0x28 == character || character == 0x29         // ( )
-        || (0x2c <= character && character <= 0x2e)       // , - .
-        || 0x3a == character || character == 0x3b         // : ;
-        || 0xe28093 == character || character == 0xe28094 // – —
-        || 0xe2809c == character || character == 0xe2809d // “ ”
+        || character == 0x28                              // (
+        || character == 0x29                              // )
+        || character == 0x2c                              // ,
+        || character == 0x2d                              // -
+        || character == 0xe28093                          // –
+        || character == 0xe28094                          // —
         ){
            return true;
         }
@@ -84,21 +90,21 @@ bool checkForSpecialSymbols(int character){
  * @return True if a vowel, false otherwise
  */
 int checkVowels(int character){
-   if(character == 0x41                            // A
-        || character == 0x45                         // E
-        || character == 0x49                         // I
-        || character == 0x4f                         // O
-        || character == 0x55                         // U
-        || character == 0x61                         // a
-        || character == 0x65                         // e
-        || character == 0x69                         // i
-        || character == 0x6f                         // o
-        || character == 0x75                         // u
+   if(character == 0x41                                 // A
+        || character == 0x45                            // E
+        || character == 0x49                            // I
+        || character == 0x4f                            // O
+        || character == 0x55                            // U
         || (0xc380 <= character && character <= 0xc383) // À Á Â Ã
         || (0xc388 <= character && character <= 0xc38a) // È É Ê
         || (0xc38c == character || character == 0xc38d) // Ì Í
         || (0xc392 <= character && character <= 0xc395) // Ò Ó Ô Õ
         || (0xc399 == character || character == 0xc39a) // Ù Ú
+        || character == 0x61                            // a
+        || character == 0x65                            // e
+        || character == 0x69                            // i
+        || character == 0x6f                            // o
+        || character == 0x75                            // u
         || (0xc3a0 <= character && character <= 0xc3a3) // à á â ã
         || (0xc3a8 <= character && character <= 0xc3aa) // è é ê
         || (0xc3ac == character || character == 0xc3ad) // ì í
@@ -115,18 +121,18 @@ int checkVowels(int character){
  * @return True if a consonant, false otherwise
  */
 int checkConsonants(int character){
-    if(character == 0xc387                      // Ç
-        || character == 0xc3a7                   // ç
-        || (0x42 <= character && character <= 0x44) // B C D
+    if((0x42 <= character && character <= 0x44) // B C D
         || (0x46 <= character && character <= 0x48) // F G H
         || (0x4a <= character && character <= 0x4e) // J K L M N
         || (0x50 <= character && character <= 0x54) // P Q R S T
         || (0x56 <= character && character <= 0x5a) // V W X Y Z
+        || character == 0xc387                      // Ç
         || (0x62 <= character && character <= 0x64) // b c d
         || (0x66 <= character && character <= 0x68) // f g h
         || (0x6a <= character && character <= 0x6e) // j k l m n
         || (0x70 <= character && character <= 0x74) // p q r s t
         || (0x76 <= character && character <= 0x7a) // v w x y z
+        || character == 0xc3a7                      // ç
         ){
                 return true;
         }
