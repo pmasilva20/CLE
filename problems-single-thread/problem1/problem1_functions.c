@@ -4,48 +4,8 @@
 #include <locale.h>
 #include <stdbool.h>
 #include <ctype.h>
-#include "./preprocessing.h"
+#include "./prob1_processing.h"
 
-
-
-int detectBytesNeeded(int character){
-    if(character < 192){
-        return 0;
-    }
-    else if (character < 224)
-    {
-        return 2;
-    }
-    else if (character < 240)
-    {
-        return 3;
-    }
-    else
-    {
-        return 4;
-    }
-}
-
-
-bool checkForSpecialSymbols(int character){
-        //Detect if white/tab/newline space
-        if(character == ' ' || character == 0x9 || character == 0xA || character == 0xD){
-            return true;
-        }
-        //Detect if separation symbol
-        if(character == '-' || character == '"' || character == '['
-        || character == 0xE2809C || character == 0xe2809D
-        || character == ']' || character == '(' || character == ')'){
-            return true;
-        }
-        //Detect if punctuation symbol
-        if(character == '.' || character == ',' || character == ':' ||
-        character == ';' || character == '?' || character == '!'
-        || character == 0xE28093 || character == 0xE280A6 || character == 0xe28094){
-            return true;
-        }
-    return false;
-}
 
 
 int problem1(char* filename, int* pNWords, int* pNVowelStartWords, int* pNConsonantEndWord){
@@ -69,9 +29,6 @@ int problem1(char* filename, int* pNWords, int* pNVowelStartWords, int* pNConson
         return 1;
     }
 
-    //TODO:the apostrophe (' 0x27) and single quotation marks (‘ 0xE28098 - ’ 0xE28099) are considered here to merge two words into a single one.
-
-
 
     //Character is of type int due to EOF having more than 1 byte
     character = getc(pFile);
@@ -92,9 +49,9 @@ int problem1(char* filename, int* pNWords, int* pNVowelStartWords, int* pNConson
         }
 
         //printf("Before:%d ",character);
-        character = preprocessChar(character);
+        //character = preprocessChar(character);
         //printf("After preprocess:%d\n",character);
-        character = tolower(character);
+        //character = tolower(character);
 
         //Check if inWord
         if(inWord){
@@ -106,19 +63,26 @@ int problem1(char* filename, int* pNWords, int* pNVowelStartWords, int* pNConson
                     nConsonantEndWord+=1;
                 }
             }
+            // alpha or ` or ' or ‘ or ’
             //If alphanumeric character or underscore or apostrophe -> nothing
                 //lastChar = character
-            if(isalnum(character) ||  character == '_' || character == '\''
-                || character == 0xE28098 || character == 0xE28099){
+            else if(checkVowels(character) 
+                || checkConsonants(character) 
+                || (character >= '0' && character <= '9') 
+                || checkForContinuationSymbols(character)
+                || character == '_'){
                 previousCharacter = character;
             }
         }
         else{
             //If white space or separation or punctuation simbol -> nothing
+            // alpha or ` or ' or ‘ or ’
             //If alphanumeric character or underscore or apostrophe -> inWord is True
                 //nWords += 1, checkVowel() -> nWordsBV+=1, lastChar = character
-            if(isalnum(character) ||  character == '_' || character == '\''
-                || character == 0xE28098 || character == 0xE28099){
+            if(checkVowels(character) 
+                || checkConsonants(character) 
+                || (character >= '0' && character <= '9')
+                || character == '_'){
                 inWord = true;
                 nWords +=1;
                 if(checkVowels(character)){

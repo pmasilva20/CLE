@@ -50,6 +50,13 @@ static pthread_cond_t fifoFileEmpty;
 
 static pthread_cond_t fifoFileFull;
 
+/** \brief No File Chunks put in yet */
+static pthread_cond_t fifoChunksPut;
+
+static bool noChunksPut;
+
+static bool finishedProcessing;
+
 /** \brief flag which warrants that the data transfer region is initialized exactly once */
 static pthread_once_t init = PTHREAD_ONCE_INIT;
 
@@ -67,9 +74,12 @@ static void initialization (void)
     chunkCount = 0;
     fileTextCount = 0;
     full_file_text = false;
+    noChunksPut = true;
+    finishedProcessing = false;
     ii_file = 0;
     ri_file = 0;
 
+    pthread_cond_init (&fifoChunksPut, NULL);
     pthread_cond_init (&fifoFileEmpty, NULL);
     pthread_cond_init (&fifoFileFull, NULL);
     pthread_cond_init (&fifoChunkEmpty, NULL);
@@ -80,13 +90,44 @@ int getChunkCount(){
     //Enter monitor
     pthread_mutex_lock (&accessCR);
 
+    pthread_once (&init, initialization);
+
     int count = chunkCount;
     pthread_mutex_unlock (&accessCR);
     return count;
 }
+bool hasChunksLeft(){
+    //Enter monitor
+    pthread_mutex_lock (&accessCR);
+
+    pthread_once (&init, initialization);
+
+    //If !finichedProcessing && chunkCount == 0 -> wait in condition
+        //Get freed when processing of one chunk is done
+    //if chunkCount > 0 then it goes foward and process one, it will only block if !finished processing
+    //return !finishedProcessing
+
+    if(!finishedProcessing && chunkCount == 0){
+        pthread_cond_wait (&fifoChunksPut, &accessCR);
+    }
+
+    pthread_mutex_unlock (&accessCR);
+
+    return !finishedProcessing || chunkCount > 0;
+}
+
+void finishedProcessingChunks(){
+    pthread_mutex_lock (&accessCR);
+    //Init only once
+    pthread_once (&init, initialization);
+    finishedProcessing = true;
+    pthread_cond_broadcast(&fifoChunksPut);
+
+    pthread_mutex_unlock (&accessCR);
+}
 
 
-struct File_text getFileText(int fileId){
+struct File_text* getFileText(int fileId){
     struct File_text file_text;
     //Enter monitor
     pthread_mutex_lock (&accessCR);
@@ -94,13 +135,14 @@ struct File_text getFileText(int fileId){
     pthread_once (&init, initialization);
 
     for(int i = 0; i < fileTextCount; i++){
-        if(files_mem[i].fileId == fileId) return files_mem[i];
+        if(files_mem[i].fileId == fileId){
+            return &files_mem[i];
+        }
     }
 
     pthread_mutex_unlock (&accessCR);
 
-    struct File_text newFile;
-    return newFile;
+    return NULL;
 }
 
 void putFileText(int nWords, int nVowelStartWords, int nConsonantEndWord, int fileID){
@@ -166,19 +208,24 @@ void putFileText(int nWords, int nVowelStartWords, int nConsonantEndWord, int fi
 }
 
 
-struct Chunk_text getChunkText(){
-    struct Chunk_text chunk;
+struct Chunk_text* getChunkText(){
+    struct Chunk_text* chunk;
     //Enter monitor
     pthread_mutex_lock (&accessCR);
 
     pthread_once (&init, initialization);
+
+    if(chunkCount == 0){
+        pthread_mutex_unlock (&accessCR);
+        return NULL;
+    }
 
     while((ii_chunk == ri_chunk) && !full_text_chunk){
         pthread_cond_wait (&fifoChunkEmpty, &accessCR);
     }
 
     chunkCount--;
-    chunk = chunk_mem[ri_chunk];
+    chunk = &chunk_mem[ri_chunk];
     ri_chunk = (ri_chunk + 1) % 100;
     full_text_chunk = false;
 
@@ -218,6 +265,10 @@ void putChunkText(struct Chunk_text chunk){
 
     full_text_chunk = (ii_chunk == ri_chunk);
 
+    noChunksPut = false;
+    pthread_cond_signal(&fifoChunksPut);
     pthread_cond_signal (&fifoChunkEmpty);
     pthread_mutex_unlock (&accessCR);
 }
+
+

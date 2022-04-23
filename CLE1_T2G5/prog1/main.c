@@ -1,28 +1,20 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <libgen.h>
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
 #include "structures.h"
-#include "./problem1_functions.h"
 #include "func.h"
 #include "fifo.h"
-#include "preprocessing.h"
-#include <stdbool.h>
-#include <ctype.h>
+#include "prob1_processing.h"
+#include "worker.h"
 
-
-/** \brief worker life cycle routine */
-static void *worker (void *id);
 
 /** \brief consumer threads return status array */
 int *statusWorks;
 
-/** \brief Number of Chunks to be processed **/
-int chunksToProcess =0;
 
 
 static void printUsage (char *cmdName);
@@ -32,7 +24,7 @@ int main (int argc, char** argv){
     int opt;
     int index;
     int fCount = 0;
-    int numberWorkers = 2;
+    int numberWorkers = 10;
 
     char* fName = "no name";
     char* files[argc];
@@ -88,8 +80,6 @@ int main (int argc, char** argv){
     }
 
     printf("%s\n",files[0]);
-    //TODO:Look at parameters
-    makeChunks("../text0.txt",10,20);
 
 
     //Make N worker threads
@@ -120,6 +110,15 @@ int main (int argc, char** argv){
         }
     }
 
+
+
+
+
+    //TODO:Look at parameters
+    makeChunks("../text4.txt",10,10);
+    finishedProcessingChunks();
+
+
     //Join all threads and then get all results from SR
     for(int i = 0; i < numberWorkers; i++){
         if (pthread_join (tIdWorkers[i], (void *) &status_p) != 0){
@@ -127,97 +126,20 @@ int main (int argc, char** argv){
             exit (EXIT_FAILURE);
         }
         printf ("thread worker, with id %u, has terminated\n", i);
-        printf ("its status was %d\n", *status_p);
+        //printf ("its status was %d\n", *status_p);
     }
     for(int i = 0; i < 1; i++){
-        struct File_text text = getFileText(10);
-        printf("File:%d\n",text.fileId);
-        printf("Words:%d\n",text.nWords);
-        printf("Vowel words:%d\n",text.nVowelStartWords);
-        printf("Consonant words:%d\n",text.nConsonantEndWord);
+        struct File_text* text = getFileText(10);
+        if(text != NULL){
+            printf("File:%d\n",(*text).fileId);
+            printf("Words:%d\n",(*text).nWords);
+            printf("Vowel words:%d\n",(*text).nVowelStartWords);
+            printf("Consonant words:%d\n",(*text).nConsonantEndWord);
+        }
+        else printf("Error retrieving files statistics for file %d",10);
+
     }
 
-}
-
-
-
-static void *worker (void *par)
-{
-    unsigned int id = *((unsigned int *) par);                                                          /* consumer id */
-
-    printf("Soldier %d!\n",id);
-    //while chunks to process
-        //do prob1Funcs
-        //save to SH
-        //die
-
-    do {
-        //Get chunk
-        //TODO:Temporary
-        if(getChunkCount() <= 0) break;
-        struct Chunk_text chunk = getChunkText();
-        //Do prob1 processing
-        int nWords = 0;
-        int nVowelStartWords = 0;
-        int nConsonantEndWord = 0;
-
-        //State Flags
-        bool inWord = false;
-
-        //Read files
-        int character;
-        int previousCharacter = 0;
-
-        for(int i = 0; i < chunk.count; i++){
-            character = chunk.chunk[i];
-            //Check if inWord
-            if(inWord){
-                //If white space or separation or punctuation simbol -> inWord is False
-                //if lastchar is consonant
-                if(checkForSpecialSymbols(character)){
-                    inWord = false;
-                    if(checkConsonants(previousCharacter)){
-                        nConsonantEndWord+=1;
-                    }
-                }
-                //If alphanumeric character or underscore or apostrophe -> nothing
-                //lastChar = character
-                if(isalnum(character) ||  character == '_' || character == '\''
-                   || character == 0xE28098 || character == 0xE28099){
-                    previousCharacter = character;
-                }
-            }
-            else{
-                //If white space or separation or punctuation simbol -> nothing
-                //If alphanumeric character or underscore or apostrophe -> inWord is True
-                //nWords += 1, checkVowel() -> nWordsBV+=1, lastChar = character
-                if(isalnum(character) ||  character == '_' || character == '\''
-                   || character == 0xE28098 || character == 0xE28099){
-                    inWord = true;
-                    nWords +=1;
-                    if(checkVowels(character)){
-                        nVowelStartWords+=1;
-                    }
-                    previousCharacter = character;
-                }
-            }
-        }
-        printf("Chunk %d\n",chunk.fileId);
-        printf("Nwords %d\n",nWords);
-        printf("NVowelwords %d\n",nVowelStartWords);
-        printf("NConsonantswords %d\n",nConsonantEndWord);
-        printf("\n");
-
-        //Put to fifo.c
-        putFileText(nWords, nVowelStartWords, nConsonantEndWord, chunk.fileId);
-
-        printf("Me:%d Remaining chunksToProcess %d\n",id,getChunkCount());
-    } while (getChunkCount() > 0);
-
-    statusWorks[id] = EXIT_SUCCESS;
-    printf("Exit\n");
-    //printUsage("Exiting\n");
-    pthread_exit (&statusWorks[id]);
 }
 
 

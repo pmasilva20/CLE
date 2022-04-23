@@ -10,12 +10,9 @@ add_executable(prog1
         main.c
         func.c
         func.h
-        preprocessing.c
-        preprocessing.h
-        problem1.c
-        problem1_functions.c
-        problem1_functions.h
+        prob1_processing.c
+        prob1_processing.h
         structures.c
-        structures.h fifo.c fifo.h)
+        structures.h fifo.c fifo.h worker.c worker.h)
 
 target_link_libraries(prog1 pthread)
