@@ -1,31 +1,39 @@
-//
-// Created by joaots on 07/04/22.
-//
-//TODO: Ver forma de alocar melhor a memória.
+/**
+ *  \file structures.h
+ *
+ *  \brief Assignment 1 : Problem 2 - Determinant of a Square Matrix
+ *
+ *  Definition of Structures
+ *
+ *  \author João Soares (93078) e Pedro Silva (93011)
+ */
 
 #ifndef PROG2_STRUCTURES_H
 #define PROG2_STRUCTURES_H
 
-//TODO: Tentar uns mallocs
-
-struct Matrix_result{
+/** Structure of Matrix processed Result */
+struct MatrixResult{
     int id;
     int fileid;
     double determinant;
 };
 
-struct File_matrices{
+/** Structure of File */
+struct FileMatrices{
     int id;
+    FILE *pFile;
     char name[40];
     int numberOfMatrices;
-    struct Matrix_result *determinant_result;
+    int orderOfMatrices;
+    struct MatrixResult *determinant_result;
 };
 
+/** Structure of Matrix to process */
 struct Matrix{
     int orderMatrix;
     int fileid;
     int id;
-    double matrix[256][256]; //TODO: Ver como fazer  aqui o malloc;
+    double matrix[256][256];
 };
 
 
