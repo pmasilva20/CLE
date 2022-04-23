@@ -17,4 +17,7 @@
 /** \brief Chunks transfer region nominal capacity (in number of Chunks that can be stored) */
 #define  K            500
 
+/** \brief Number of characters(encoded in UTF-8) per chunk */
+#define  chunkSize    20
+
 #endif /* PROBCONST_H_ */

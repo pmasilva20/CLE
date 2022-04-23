@@ -19,6 +19,7 @@
 #include "shared_region.h"
 #include "prob1_processing.h"
 #include "assign1_worker.h"
+#include "probConst.h"
 
 
 /** \brief consumer threads return status array */
@@ -122,7 +123,7 @@ int main (int argc, char** argv){
      * Store each chunk in Shared Region
      */
     for(int i = 0; i < fileid; i++){
-        makeChunks(fileNames[i],i,10);
+        makeChunks(fileNames[i],i,chunkSize);
     }
     /**Signalize any waiting workers that all chunks have been made by main */
     finishedProcessingChunks();
@@ -141,7 +142,7 @@ int main (int argc, char** argv){
 
     /** Get all Files statistics and print to console */
     for(int i = 0; i < fileid; i++){
-        struct File_text* text = getFileText(i);
+        struct FileText* text = getFileText(i);
         if(text != NULL){
             printf("\n");
             printf("File name: %s\n",(*text).name);
@@ -169,11 +170,11 @@ static void *worker (void *par)
     //printf("Worker %d ready!\n",id);
 
     /** While there are any chunks to process*/
-    while(hasChunksLeft()){
+    while(hasChunksLeft(0)){
         /** Try to acquire a Text Chunk*/
-        struct Chunk_text* chunk = getChunkText();
+        struct ChunkText* chunk = getChunkText(0);
         /** Process Text Chunk and store results in Shared Region*/
-        if(chunk != NULL)processChunk(*chunk);
+        if(chunk != NULL)processChunk(*chunk, id);
         //printf("Worker:%d Remaining chunksToProcess %d\n",id,getChunkCount());
     }
     /** Exit with success after handling all chunks*/
@@ -188,5 +189,6 @@ static void printUsage (char *cmdName)
                      " OPTIONS:\n"
                      " -h --- print this help\n"
                      " -f --- filename\n"
+                     " -t --- number of worker threads\n"
                      , cmdName);
 }
