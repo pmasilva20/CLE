@@ -142,23 +142,18 @@ bool hasChunksLeft(struct ChunkText *chunk, unsigned int consId) {
         return false;
     }
     else if(chunkCount == 0 && !finishedProcessing){
-        /** If main is still processing but there are no chunks available workers wait here */
-        if(!finishedProcessing && chunkCount == 0){
-
-            if ((statusWorks[consId] = pthread_cond_wait (&fifoChunksPut, &accessCR)) != 0)                                   /* enter monitor */
-            {
-                errno = statusWorks[consId];                                                            /* save error in errno */
-                perror ("error on waiting for fifoChunksPut");
-                statusWorks[consId] = EXIT_FAILURE;
-                pthread_exit (statusWorks[consId]);
-            }
-        }
-    }
-    while((ii_chunk == ri_chunk) && !full_text_chunk){
         if ((statusWorks[consId] = pthread_cond_wait (&fifoChunksPut, &accessCR)) != 0)                                   /* enter monitor */
         {
             errno = statusWorks[consId];                                                            /* save error in errno */
             perror ("error on waiting for fifoChunksPut");
+            statusWorks[consId] = EXIT_FAILURE;
+            pthread_exit (statusWorks[consId]);
+        }
+    }
+    while((ii_chunk == ri_chunk) && !full_text_chunk){
+        if ((statusWorks[consId] = pthread_cond_wait (&fifoChunkEmpty, &accessCR)) != 0)
+        { errno = statusWorks[consId];
+            perror ("error on waiting in fifoChunkEmpty");
             statusWorks[consId] = EXIT_FAILURE;
             pthread_exit (&statusWorks[consId]);
         }
@@ -168,6 +163,22 @@ bool hasChunksLeft(struct ChunkText *chunk, unsigned int consId) {
     chunk = &chunk_mem[ri_chunk];
     ri_chunk = (ri_chunk + 1) % K;
     full_text_chunk = false;
+
+    /** Let Main know that a Matrix has been retrieved */
+    if ((statusWorks[consId] =  pthread_cond_signal (&fifoChunkFull)) != 0)
+    { errno = statusWorks[consId];
+        perror ("error on signaling in fifoFull");
+        statusWorks[consId] = EXIT_FAILURE;
+        pthread_exit (&statusWorks[consId]);
+    }
+
+    /** Exit monitor */
+    if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)
+    { errno = statusWorks[consId];
+        perror ("error on exiting monitor(CF)");
+        statusWorks[consId]= EXIT_FAILURE;
+        pthread_exit (&statusWorks[consId]);
+    }
 
     return true;
 }
