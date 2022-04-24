@@ -153,6 +153,8 @@ int main (int argc, char** argv){
         else printf("Error retrieving files statistics for file %d",i);
     }
 
+    freeChunks();
+
     /** Print Elapsed Time */
     printf ("\nElapsed time = %.6f s\n",  (finish.tv_sec - start.tv_sec) / 1.0 + (finish.tv_nsec - start.tv_nsec) / 1000000000.0);
 
@@ -167,13 +169,11 @@ static void *worker (void *par)
     /** Worker ID */
     unsigned int id = *((unsigned int *) par);
 
-
+    struct ChunkText chunk;
     /** While there are any chunks to process*/
-    while(hasChunksLeft(id)){
-        /** Try to acquire a Text Chunk*/
-        struct ChunkText* chunk = getChunkText(id);
+    while(getChunks(&chunk, id)){
         /** Process Text Chunk and store results in Shared Region*/
-        if(chunk != NULL)processChunk(*chunk, id);
+        processChunk(chunk, id);
     }
     /** Exit with success after handling all chunks*/
     statusWorks[id] = EXIT_SUCCESS;

@@ -11,9 +11,8 @@
  *      \li putChunkText
  *
  *  Workers Operations:
- *      \li hasChunksLeft
+ *      \li getChunks
  *      \li putFileText
- *      \li getChunkText
  *
  *  \author João Soares (93078) e Pedro Silva (93011)
  */
@@ -114,11 +113,12 @@ static void initialization (void)
 /**
  * \brief Check if there are any chunks in Shared Region to process or if main is still processing new chunks.
  * If there are no chunks in Shared Region but main is still processing them, then it waits until a chunks is put.
+ * Else retrieves a stored Text Chunk to be processed.
  *
  * Operation carried out by the workers.
  * @return True if there are chunks to be processed still
  */
-bool hasChunksLeft(unsigned int consId) {
+bool getChunks(struct ChunkText* chunk, unsigned int consId) {
 
     if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)                                   /* enter monitor */
     {
@@ -130,28 +130,52 @@ bool hasChunksLeft(unsigned int consId) {
 
     pthread_once (&init, initialization);
 
-    /** If main is still processing but there are no chunks available workers wait here */
-    if(!finishedProcessing && chunkCount == 0){
 
-        if ((statusWorks[consId] = pthread_cond_wait (&fifoChunksPut, &accessCR)) != 0)                                   /* enter monitor */
-        {
-            errno = statusWorks[consId];                                                            /* save error in errno */
-            perror ("error on waiting for fifoChunksPut");
-            statusWorks[consId] = EXIT_FAILURE;
-            pthread_exit (statusWorks[consId]);
+    while((ii_chunk == ri_chunk) && !full_text_chunk){
+
+        if(chunkCount == 0 && finishedProcessing){
+            /** Exit monitor */
+            if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)                                   /* enter monitor */
+            {
+                errno = statusWorks[consId];                                                            /* save error in errno */
+                perror ("error on exiting monitor(CF)");
+                statusWorks[consId] = EXIT_FAILURE;
+                pthread_exit (statusWorks[consId]);
+            }
+            return false;
         }
+
+        if ((statusWorks[consId] = pthread_cond_wait (&fifoChunkEmpty, &accessCR)) != 0)
+        { errno = statusWorks[consId];
+            perror ("error on waiting in fifoChunkEmpty");
+            statusWorks[consId] = EXIT_FAILURE;
+            pthread_exit (&statusWorks[consId]);
+        }
+
+    }
+
+    chunkCount--;
+    (*chunk) = chunk_mem[ri_chunk];
+    ri_chunk = (ri_chunk + 1) % K;
+    full_text_chunk = false;
+
+    /** Let Main know that a Matrix has been retrieved */
+    if ((statusWorks[consId] =  pthread_cond_signal (&fifoChunkFull)) != 0)
+    { errno = statusWorks[consId];
+        perror ("error on signaling in fifoFull");
+        statusWorks[consId] = EXIT_FAILURE;
+        pthread_exit (&statusWorks[consId]);
     }
 
     /** Exit monitor */
-    if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)                                   /* enter monitor */
-    {
-        errno = statusWorks[consId];                                                            /* save error in errno */
+    if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)
+    { errno = statusWorks[consId];
         perror ("error on exiting monitor(CF)");
-        statusWorks[consId] = EXIT_FAILURE;
-        pthread_exit (statusWorks[consId]);
+        statusWorks[consId]= EXIT_FAILURE;
+        pthread_exit (&statusWorks[consId]);
     }
 
-    return !finishedProcessing || chunkCount > 0;
+    return true;
 }
 /**
  * \brief Signal that all text files have been read by main and divided into chunks.
@@ -167,7 +191,7 @@ void finishedProcessingChunks(){
 
     pthread_once (&init, initialization);
     finishedProcessing = true;
-    pthread_cond_broadcast(&fifoChunksPut);
+    pthread_cond_broadcast(&fifoChunkEmpty);
 
     /** Exit monitor */
     if(pthread_mutex_unlock (&accessCR)!=0){
@@ -221,7 +245,7 @@ struct FileText* getFileText(int fileId){
  */
 void putFileText(int nWords, int nVowelStartWords, int nConsonantEndWord, int fileID, char *filename, unsigned int consId) {
 
-    //Check if I can enter
+    /** Check if I can enter monitor*/
     if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)                                   /* enter monitor */
     {
         errno = statusWorks[consId];                                                            /* save error in errno */
@@ -230,7 +254,6 @@ void putFileText(int nWords, int nVowelStartWords, int nConsonantEndWord, int fi
         pthread_exit (statusWorks[consId]);
     }
 
-    //Init only once
     pthread_once (&init, initialization);
 
     while (full_file_text){
@@ -293,72 +316,6 @@ void putFileText(int nWords, int nVowelStartWords, int nConsonantEndWord, int fi
 }
 
 /**
- * \brief Retrieve a stored Text Chunk to be processed.
- *
- * Operation carried out by the workers.
- * @param consId Id of worker
- * @param fileId File Id of the file that is to be retrieved
- * @return FileText structure with file information
- */
-struct ChunkText *getChunkText(unsigned int consId) {
-    struct ChunkText* chunk;
-    /** Check if I can enter monitor*/
-    if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)                                   /* enter monitor */
-    {
-        errno = statusWorks[consId];                                                            /* save error in errno */
-        perror ("error on entering monitor(CF)");
-        statusWorks[consId] = EXIT_FAILURE;
-        pthread_exit (statusWorks[consId]);
-    }
-
-    pthread_once (&init, initialization);
-
-    if(chunkCount == 0){
-        /** Exit monitor */
-        if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)
-        { errno = statusWorks[consId];
-            perror ("error on exiting monitor(CF)");
-            statusWorks[consId]= EXIT_FAILURE;
-            pthread_exit (&statusWorks[consId]);
-        }
-        return NULL;
-    }
-
-    while((ii_chunk == ri_chunk) && !full_text_chunk){
-        if ((statusWorks[consId] = pthread_cond_wait (&fifoChunkEmpty, &accessCR)) != 0)
-        { errno = statusWorks[consId];
-            perror ("error on waiting in fifoChunkEmpty");
-            statusWorks[consId] = EXIT_FAILURE;
-            pthread_exit (&statusWorks[consId]);
-        }
-    }
-
-    chunkCount--;
-    chunk = &chunk_mem[ri_chunk];
-    ri_chunk = (ri_chunk + 1) % K;
-    full_text_chunk = false;
-
-
-    /** Let Main know that a Matrix has been retrieved */
-    if ((statusWorks[consId] =  pthread_cond_signal (&fifoChunkFull)) != 0)
-    { errno = statusWorks[consId];
-        perror ("error on signaling in fifoFull");
-        statusWorks[consId] = EXIT_FAILURE;
-        pthread_exit (&statusWorks[consId]);
-    }
-
-    /** Exit monitor */
-    if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)
-    { errno = statusWorks[consId];
-        perror ("error on exiting monitor(CF)");
-        statusWorks[consId]= EXIT_FAILURE;
-        pthread_exit (&statusWorks[consId]);
-    }
-
-    return chunk;
-}
-
-/**
  * \brief Insert a Text Chunk into Shared Region
  *
  * Operation done by main
@@ -380,6 +337,16 @@ void putChunkText(struct ChunkText chunk){
         }
     };
     chunkCount++;
+    /** Cleanup any remaining memory */
+    if(chunk_mem[ii_chunk].chunk != NULL){
+        free(chunk_mem[ii_chunk].chunk);
+        chunk_mem[ii_chunk].chunk = NULL;
+        chunk_mem[ii_chunk].filename = NULL;
+        chunk_mem[ii_chunk].count = 0;
+        chunk_mem[ii_chunk].fileId = 0;
+    }
+
+
     chunk_mem[ii_chunk]= chunk;
 
     ii_chunk= (ii_chunk+1)%K;
@@ -391,6 +358,33 @@ void putChunkText(struct ChunkText chunk){
     }
     if(pthread_cond_signal (&fifoChunkEmpty) != 0){
         printf("Main: error on signaling fifo chunk empty");
+    }
+
+    /** Exit Monitor */
+    if(pthread_mutex_unlock (&accessCR)!=0){
+        printf("Main: error on exiting monitor(CF)");
+    }
+}
+
+
+/**
+ * \brief Free any memory allocated previously in Shared Region.
+ *
+ * Operation carried out by main.
+ */
+void freeChunks(){
+    /** Enter Monitor */
+    if(pthread_mutex_lock (&accessCR)!=0){
+        printf("Main: error on entering monitor(CF)");
+    }
+
+    pthread_once (&init, initialization);
+
+    for(int i = 0; i < K; i++){
+        if(chunk_mem[i].chunk != NULL){
+            free(chunk_mem[i].chunk);
+            chunk_mem[i].chunk = NULL;
+        }
     }
 
     /** Exit Monitor */
