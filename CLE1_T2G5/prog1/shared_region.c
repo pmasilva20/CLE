@@ -114,11 +114,12 @@ static void initialization (void)
 /**
  * \brief Check if there are any chunks in Shared Region to process or if main is still processing new chunks.
  * If there are no chunks in Shared Region but main is still processing them, then it waits until a chunks is put.
+ * Retrieve a stored Text Chunk to be processed.
  *
  * Operation carried out by the workers.
  * @return True if there are chunks to be processed still
  */
-bool hasChunksLeft(struct ChunkText *chunk, unsigned int consId) {
+bool hasChunksLeft(struct ChunkText* chunk, unsigned int consId) {
 
     if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)                                   /* enter monitor */
     {
@@ -130,37 +131,32 @@ bool hasChunksLeft(struct ChunkText *chunk, unsigned int consId) {
 
     pthread_once (&init, initialization);
 
-    if(chunkCount == 0 && finishedProcessing){
-        /** Exit monitor */
-        if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)                                   /* enter monitor */
-        {
-            errno = statusWorks[consId];                                                            /* save error in errno */
-            perror ("error on exiting monitor(CF)");
-            statusWorks[consId] = EXIT_FAILURE;
-            pthread_exit (statusWorks[consId]);
-        }
-        return false;
-    }
-    else if(chunkCount == 0 && !finishedProcessing){
-        if ((statusWorks[consId] = pthread_cond_wait (&fifoChunksPut, &accessCR)) != 0)                                   /* enter monitor */
-        {
-            errno = statusWorks[consId];                                                            /* save error in errno */
-            perror ("error on waiting for fifoChunksPut");
-            statusWorks[consId] = EXIT_FAILURE;
-            pthread_exit (statusWorks[consId]);
-        }
-    }
+
     while((ii_chunk == ri_chunk) && !full_text_chunk){
+
+        if(chunkCount == 0 && finishedProcessing){
+            /** Exit monitor */
+            if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)                                   /* enter monitor */
+            {
+                errno = statusWorks[consId];                                                            /* save error in errno */
+                perror ("error on exiting monitor(CF)");
+                statusWorks[consId] = EXIT_FAILURE;
+                pthread_exit (statusWorks[consId]);
+            }
+            return false;
+        }
+
         if ((statusWorks[consId] = pthread_cond_wait (&fifoChunkEmpty, &accessCR)) != 0)
         { errno = statusWorks[consId];
             perror ("error on waiting in fifoChunkEmpty");
             statusWorks[consId] = EXIT_FAILURE;
             pthread_exit (&statusWorks[consId]);
         }
+
     }
 
     chunkCount--;
-    chunk = &chunk_mem[ri_chunk];
+    (*chunk) = chunk_mem[ri_chunk];
     ri_chunk = (ri_chunk + 1) % K;
     full_text_chunk = false;
 
@@ -196,7 +192,7 @@ void finishedProcessingChunks(){
 
     pthread_once (&init, initialization);
     finishedProcessing = true;
-    pthread_cond_broadcast(&fifoChunksPut);
+    pthread_cond_broadcast(&fifoChunkEmpty);
 
     /** Exit monitor */
     if(pthread_mutex_unlock (&accessCR)!=0){

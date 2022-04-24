@@ -15,7 +15,7 @@
 #define  N           10
 
 /** \brief Chunks transfer region nominal capacity (in number of Chunks that can be stored) */
-#define  K            10
+#define  K            10000
 
 /** \brief Number of characters(encoded in UTF-8) per chunk */
 #define  chunkSize    20
