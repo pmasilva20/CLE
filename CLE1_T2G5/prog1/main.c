@@ -171,7 +171,7 @@ static void *worker (void *par)
 
     struct ChunkText chunk;
     /** While there are any chunks to process*/
-    while(hasChunksLeft(&chunk,id)){
+    while(getChunks(&chunk, id)){
         /** Process Text Chunk and store results in Shared Region*/
         processChunk(chunk, id);
     }

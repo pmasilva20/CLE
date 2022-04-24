@@ -11,9 +11,8 @@
  *      \li putChunkText
  *
  *  Workers Operations:
- *      \li hasChunksLeft
+ *      \li getChunks
  *      \li putFileText
- *      \li getChunkText
  *
  *  \author João Soares (93078) e Pedro Silva (93011)
  */
@@ -114,12 +113,12 @@ static void initialization (void)
 /**
  * \brief Check if there are any chunks in Shared Region to process or if main is still processing new chunks.
  * If there are no chunks in Shared Region but main is still processing them, then it waits until a chunks is put.
- * Retrieve a stored Text Chunk to be processed.
+ * Else retrieves a stored Text Chunk to be processed.
  *
  * Operation carried out by the workers.
  * @return True if there are chunks to be processed still
  */
-bool hasChunksLeft(struct ChunkText* chunk, unsigned int consId) {
+bool getChunks(struct ChunkText* chunk, unsigned int consId) {
 
     if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)                                   /* enter monitor */
     {
@@ -314,84 +313,6 @@ void putFileText(int nWords, int nVowelStartWords, int nConsonantEndWord, int fi
         statusWorks[consId]= EXIT_FAILURE;
         pthread_exit (&statusWorks[consId]);
     }
-}
-
-/**
- * \brief Retrieve a stored Text Chunk to be processed.
- *
- * Operation carried out by the workers.
- * @param consId Id of worker
- * @param fileId File Id of the file that is to be retrieved
- * @return FileText structure with file information
- */
-struct ChunkText *getChunkText(unsigned int consId) {
-    struct ChunkText* chunk;
-    /** Check if I can enter monitor*/
-    if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)                                   /* enter monitor */
-    {
-        errno = statusWorks[consId];                                                            /* save error in errno */
-        perror ("error on entering monitor(CF)");
-        statusWorks[consId] = EXIT_FAILURE;
-        pthread_exit (statusWorks[consId]);
-    }
-
-    pthread_once (&init, initialization);
-
-    /** If main is still processing and there are no chunks available workers wait here */
-    if(!finishedProcessing && chunkCount == 0){
-
-        if ((statusWorks[consId] = pthread_cond_wait (&fifoChunksPut, &accessCR)) != 0)                                   /* enter monitor */
-        {
-            errno = statusWorks[consId];                                                            /* save error in errno */
-            perror ("error on waiting for fifoChunksPut");
-            statusWorks[consId] = EXIT_FAILURE;
-            pthread_exit (statusWorks[consId]);
-        }
-    }
-    /** If last chunk is processed by one worker and others are left stranding **/
-    if(chunkCount == 0){
-        /** Exit monitor */
-        if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)
-        { errno = statusWorks[consId];
-            perror ("error on exiting monitor(CF)");
-            statusWorks[consId]= EXIT_FAILURE;
-            pthread_exit (&statusWorks[consId]);
-        }
-        return NULL;
-    }
-
-    while((ii_chunk == ri_chunk) && !full_text_chunk){
-        if ((statusWorks[consId] = pthread_cond_wait (&fifoChunkEmpty, &accessCR)) != 0)
-        { errno = statusWorks[consId];
-            perror ("error on waiting in fifoChunkEmpty");
-            statusWorks[consId] = EXIT_FAILURE;
-            pthread_exit (&statusWorks[consId]);
-        }
-    }
-
-    chunkCount--;
-    chunk = &chunk_mem[ri_chunk];
-    ri_chunk = (ri_chunk + 1) % K;
-    full_text_chunk = false;
-
-
-    /** Let Main know that a Matrix has been retrieved */
-    if ((statusWorks[consId] =  pthread_cond_signal (&fifoChunkFull)) != 0)
-    { errno = statusWorks[consId];
-        perror ("error on signaling in fifoFull");
-        statusWorks[consId] = EXIT_FAILURE;
-        pthread_exit (&statusWorks[consId]);
-    }
-
-    /** Exit monitor */
-    if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)
-    { errno = statusWorks[consId];
-        perror ("error on exiting monitor(CF)");
-        statusWorks[consId]= EXIT_FAILURE;
-        pthread_exit (&statusWorks[consId]);
-    }
-
-    return chunk;
 }
 
 /**
