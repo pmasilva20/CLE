@@ -338,7 +338,6 @@ struct ChunkText *getChunkText(unsigned int consId) {
     ri_chunk = (ri_chunk + 1) % K;
     full_text_chunk = false;
 
-   ;
 
     /** Let Main know that a Matrix has been retrieved */
     if ((statusWorks[consId] =  pthread_cond_signal (&fifoChunkFull)) != 0)

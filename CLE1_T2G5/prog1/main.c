@@ -167,19 +167,16 @@ static void *worker (void *par)
     /** Worker ID */
     unsigned int id = *((unsigned int *) par);
 
-    //printf("Worker %d ready!\n",id);
 
     /** While there are any chunks to process*/
-    while(hasChunksLeft(0)){
+    while(hasChunksLeft(id)){
         /** Try to acquire a Text Chunk*/
-        struct ChunkText* chunk = getChunkText(0);
+        struct ChunkText* chunk = getChunkText(id);
         /** Process Text Chunk and store results in Shared Region*/
         if(chunk != NULL)processChunk(*chunk, id);
-        //printf("Worker:%d Remaining chunksToProcess %d\n",id,getChunkCount());
     }
     /** Exit with success after handling all chunks*/
     statusWorks[id] = EXIT_SUCCESS;
-    //printf("Worker Exit\n");
     pthread_exit (&statusWorks[id]);
 }
 
