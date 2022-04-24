@@ -72,6 +72,4 @@ void processChunk(struct ChunkText chunk, unsigned int consId) {
 
     /** Store results in Shared Region */
     putFileText(nWords, nVowelStartWords, nConsonantEndWord, chunk.fileId, chunk.filename, consId);
-    /** Free allocated memory */
-    free(chunk.chunk);
 }

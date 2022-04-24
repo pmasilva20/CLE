@@ -76,6 +76,13 @@ void finishedProcessingChunks();
  * Operation carried out by the workers.
  * @return True if there are chunks to be processed still
  */
-bool hasChunksLeft(unsigned int consId);
+bool hasChunksLeft(struct ChunkText *chunk, unsigned int consId);
+
+/**
+ * \brief Free any memory allocated previously in Shared Region.
+ *
+ * Operation carried out by main.
+ */
+void freeChunks();
 
 #endif //PROG1_SHARED_REGION_H
