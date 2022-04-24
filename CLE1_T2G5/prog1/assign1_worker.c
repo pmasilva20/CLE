@@ -9,6 +9,7 @@
  */
 
 #include <stdbool.h>
+#include <stdlib.h>
 #include "structures.h"
 #include "shared_region.h"
 #include "prob1_processing.h"
@@ -71,4 +72,6 @@ void processChunk(struct ChunkText chunk, unsigned int consId) {
 
     /** Store results in Shared Region */
     putFileText(nWords, nVowelStartWords, nConsonantEndWord, chunk.fileId, chunk.filename, consId);
+    /** Free allocated memory */
+    free(chunk.chunk);
 }
