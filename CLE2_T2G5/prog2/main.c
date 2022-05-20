@@ -77,6 +77,8 @@ int main (int argc, char *argv[]) {
     /* Group size */
     int totProc;
 
+    //TODO: Adicionar verificação n workers adicionar comentários, mudar nome de variáveis e alguns prints.
+    //TOD0: Testar com 512 e separar funções 
 
     MPI_Init (&argc, &argv);
     MPI_Comm_rank (MPI_COMM_WORLD, &rank);
@@ -145,7 +147,7 @@ int main (int argc, char *argv[]) {
         while(numberMatricesSent<file_info.numberOfMatrices){
             
             /** Last Worker to receive work **/
-            //int lastWorker=0;
+            int lastWorker=0;
             
 
 
@@ -166,27 +168,32 @@ int main (int argc, char *argv[]) {
                 }
                 
                 whatToDo=WORKTODO;
+                lastWorker=n;
                 
                 MPI_Send (&whatToDo, 1, MPI_UNSIGNED, n, 0, MPI_COMM_WORLD);
                 
                 MPI_Send (&matrix1, sizeof (struct Matrix), MPI_BYTE, n, 0, MPI_COMM_WORLD);
                 
+                printf("Matrix Processed -> %d to Worker %d \n",numberMatricesSent,n);
                 numberMatricesSent++;
-                printf("Matrix Processed -> %d \n",numberMatricesSent);
+                
             }
             
 
 
-            
-            for (int n = 1; n< totProc; n++){
-                    struct MatrixResult matrixDeterminantResultReceived;
-                    
-                    MPI_Recv (&matrixDeterminantResultReceived, sizeof(struct MatrixResult),MPI_BYTE, n, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            if (lastWorker>0){
+                printf("Last Worker Value: %d\n",lastWorker);
+                for (int n = 1; n< lastWorker+1; n++){
+                        struct MatrixResult matrixDeterminantResultReceived;
+                        MPI_Recv (&matrixDeterminantResultReceived, sizeof(struct MatrixResult),MPI_BYTE, n, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-                    file_info.determinant_result[matrixDeterminantResultReceived.id]=matrixDeterminantResultReceived;
+                        file_info.determinant_result[matrixDeterminantResultReceived.id]=matrixDeterminantResultReceived;
+                        
+                        printf("Dispatcher %u : Matrix %u Determinant Result. %.3e from worker %d\n",rank,matrixDeterminantResultReceived.id,matrixDeterminantResultReceived.determinant,n);
 
-                    printf("Reveived Matrix\n");  
-                          
+                        //printf("Reveived Matrix\n");  
+                            
+                }
             }
 
             
@@ -197,7 +204,8 @@ int main (int argc, char *argv[]) {
         
         whatToDo = NOMOREWORK;
         for (r = 1; r < totProc; r++){
-            MPI_Send (&whatToDo, 1, MPI_UNSIGNED, n, 0, MPI_COMM_WORLD);
+            MPI_Send (&whatToDo, 1, MPI_UNSIGNED, r, 0, MPI_COMM_WORLD);
+            printf("Worker %d : Ending\n",r);
         }
 
         PrintResults(file_info);        
@@ -218,7 +226,6 @@ int main (int argc, char *argv[]) {
             MPI_Recv (&whatToDo, 1, MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             
             if (whatToDo== NOMOREWORK){
-                printf("Worker %d : Ending\n",rank);
                 break;
             }
 
@@ -228,7 +235,7 @@ int main (int argc, char *argv[]) {
             /** REceive Value Matrix */
             MPI_Recv (&val, sizeof (struct Matrix), MPI_BYTE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); 
             
-            printf("Worker %d : Obtained Matrix %u.\n",rank,val.id);
+            //printf("Worker %d : Obtained Matrix %u.\n",rank,val.id);
 
             matrix_determinant_result.id=val.id;
 
@@ -238,7 +245,7 @@ int main (int argc, char *argv[]) {
             //printf("Worker %u : Matrix %u Determinant Result. %.3e \n",rank,val.id,matrix_determinant_result.determinant);
             
             MPI_Send (&matrix_determinant_result,sizeof(struct MatrixResult), MPI_BYTE, 0, 0, MPI_COMM_WORLD);
-            printf("Worker %u : Matrix %u Determinant Obtained.\n",rank,matrix_determinant_result.id);
+            //printf("Worker %u : Matrix %u Determinant Obtained.\n",rank,matrix_determinant_result.id);
 
 
         }
