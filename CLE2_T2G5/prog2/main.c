@@ -3,12 +3,17 @@
  *
  *  \brief Assignment 2 : Problem 2 - Determinant of a Square Matrix
  *
- *  It sorts the list using a binary sorting algorithm which allows the sorting of parts of the original list by
- *  different processes of a group in a hierarchical way.
- *  The list of names must be supplied by the user.
+ *  Processes the Determinant of Square Matrices
+ *  The file with the square matrices must be supplied by the user.
  *  MPI implementation.
  *
- *  \author João Soares 93078 & Pedro Silva 93011
+ * 
+ *  Usage:
+ *      \li mpicc -Wall -o main main.c structures.h  utils.c utils.h
+ *      \li mpiexec -n <number_processes> ./main <file_name>
+ *      \li Example: mpiexec -n 5 ./main mat128_32.bin
+ * 
+ *  \author João Soares (93078) & Pedro Silva (93011)
 */
 
 #include <mpi.h>
@@ -19,39 +24,7 @@
 #include "structures.h"
 #include <unistd.h>
 #include "utils.h"
-
-
-/**
- * Calculate Matrix Determinant
- * \param size Order of the Matrix
- * \param matrix Matrix
- * \return Determinant of the Matrix after Gaussian Elimination
- */
-double calculateMatrixDeterminant(int orderMatrix,double matrix[orderMatrix][orderMatrix]){
-
-    /** \brief Apply Gaussian Elimination
-     *  Generic square matrix of order n into an equivalent upper triangular matrix
-    */
-    for(int i=0;i<orderMatrix-1;i++){
-        //Begin Gauss Elimination
-        for(int k=i+1;k<orderMatrix;k++){
-            double term=matrix[k][i]/matrix[i][i];
-            for(int j=0;j<orderMatrix;j++){
-                matrix[k][j]=matrix[k][j]-term*matrix[i][j];
-            }
-        }
-    }
-
-    double determinant=1;
-
-    for (int x = 0; x < orderMatrix; x++){
-        determinant*= matrix[x][x];
-    }
-
-    return determinant;
-
-}
-
+#include <time.h>
 
 /* General definitions */
 
@@ -86,29 +59,41 @@ int main (int argc, char *argv[]) {
 
     /*processing*/
 
+    if (totProc < 2) {
+        printf("Requires at least two processes - one worker.\n");
+        MPI_Finalize ();
+        return EXIT_FAILURE;
+    }
 
     if (rank == 0){ 
         /**
         * \brief Dispatcher process it is the frist process of the group 
         */
 
+        /** time limits **/
+        struct timespec start, finish;
+
         /* Pointer to the text stream associated with the file name */
         FILE *f;              
 
         /* command */
         unsigned int whatToDo;
-        
-        unsigned int minProc,                                                /* minimum number of required processes */
-                     size,                                                             /* size of processing pattern */
-                     n,                                                                         /* counting variable */
-                     r;                                                                         /* counting variable */
-        unsigned int *ord;                                                                     /* processing pattern */
 
+        /* Counting variable */
+        unsigned int n;
+        
+        /* Counting variable */                                                                         
+        unsigned int r;                                                                         
+
+        printf("Number of Worker: %d \n",totProc-1);
 
         /** Initialization FileMatrices*/
         struct FileMatrices file_info;
+        
+        /** Begin of Time measurement */
+        clock_gettime (CLOCK_MONOTONIC_RAW, &start);
 
-        /* check running parameters and load list of names into memory */
+        /* Check running parameters and load name into memory */
         if (argc != 2)
            { printf ("No file name!\n");
              whatToDo = NOMOREWORK;
@@ -127,11 +112,11 @@ int main (int argc, char *argv[]) {
              exit (EXIT_FAILURE);
            }
 
-        if(fread(&file_info.numberOfMatrices, sizeof(int), 1, f)==0){
+        if (fread(&file_info.numberOfMatrices, sizeof(int), 1, f)==0){
             printf ("Main: Error reading Number of Matrices\n");
         }
 
-        if(fread(&file_info.orderOfMatrices, sizeof(int), 1, f)==0){
+        if (fread(&file_info.orderOfMatrices, sizeof(int), 1, f)==0){
             printf("Main: Error reading Order of Matrices\n");
         }
 
@@ -149,7 +134,6 @@ int main (int argc, char *argv[]) {
             /** Last Worker to receive work **/
             int lastWorker=0;
             
-
 
             for (int n = 1; n < totProc; n++){
                 
@@ -175,6 +159,7 @@ int main (int argc, char *argv[]) {
                 MPI_Send (&matrix1, sizeof (struct Matrix), MPI_BYTE, n, 0, MPI_COMM_WORLD);
                 
                 printf("Matrix Processed -> %d to Worker %d \n",numberMatricesSent,n);
+                
                 numberMatricesSent++;
                 
             }
@@ -182,14 +167,16 @@ int main (int argc, char *argv[]) {
 
 
             if (lastWorker>0){
-                printf("Last Worker Value: %d\n",lastWorker);
+                //printf("Last Worker Value: %d\n",lastWorker);
                 for (int n = 1; n< lastWorker+1; n++){
+                        
                         struct MatrixResult matrixDeterminantResultReceived;
+                        
                         MPI_Recv (&matrixDeterminantResultReceived, sizeof(struct MatrixResult),MPI_BYTE, n, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
                         file_info.determinant_result[matrixDeterminantResultReceived.id]=matrixDeterminantResultReceived;
                         
-                        printf("Dispatcher %u : Matrix %u Determinant Result. %.3e from worker %d\n",rank,matrixDeterminantResultReceived.id,matrixDeterminantResultReceived.determinant,n);
+                        printf("Dispatcher %u : Matrix %u Determinant Result from worker %d\n",rank,matrixDeterminantResultReceived.id,n);
 
                         //printf("Reveived Matrix\n");  
                             
@@ -199,21 +186,29 @@ int main (int argc, char *argv[]) {
             
         }
 
+        /** CLose File */
         fclose(f);
-        
-        
+
+        /** Inform Workers that there is no more work - Workers will end */
         whatToDo = NOMOREWORK;
         for (r = 1; r < totProc; r++){
             MPI_Send (&whatToDo, 1, MPI_UNSIGNED, r, 0, MPI_COMM_WORLD);
             printf("Worker %d : Ending\n",r);
         }
 
-        PrintResults(file_info);        
+        /** End of measurement */
+        clock_gettime (CLOCK_MONOTONIC_RAW, &finish);
+
+        /** Print Final Results */
+        printResults(file_info);
+        
+        /** Print Elapsed Time */
+        printf ("\nElapsed time = %.6f s\n",  (finish.tv_sec - start.tv_sec) / 1.0 + (finish.tv_nsec - start.tv_nsec) / 1000000000.0);        
     }
 
 
     else { 
-        /* Worker Processes the remainder processes of the group*/
+        /** \brief  Worker Processes the remainder processes of the group **/
 
         /* command */
         unsigned int whatToDo;                                                                      
@@ -222,9 +217,11 @@ int main (int argc, char *argv[]) {
         struct Matrix val;
 
         while(true){
-            
+
+            /** Receive indication of existance of work or not */
             MPI_Recv (&whatToDo, 1, MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             
+            /** If no more work, worker terminates */
             if (whatToDo== NOMOREWORK){
                 break;
             }
@@ -232,7 +229,7 @@ int main (int argc, char *argv[]) {
             /** Matrix Determinant Result */
             struct MatrixResult matrix_determinant_result;
             
-            /** REceive Value Matrix */
+            /** Receive Value Matrix */
             MPI_Recv (&val, sizeof (struct Matrix), MPI_BYTE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); 
             
             //printf("Worker %d : Obtained Matrix %u.\n",rank,val.id);
@@ -241,15 +238,13 @@ int main (int argc, char *argv[]) {
 
             /** Calculate Matrix Determinant */
             matrix_determinant_result.determinant=calculateMatrixDeterminant(val.orderMatrix,val.matrix);
-    
-            //printf("Worker %u : Matrix %u Determinant Result. %.3e \n",rank,val.id,matrix_determinant_result.determinant);
-            
+                
+            /** Send Partial Result of a Matrix Result **/
             MPI_Send (&matrix_determinant_result,sizeof(struct MatrixResult), MPI_BYTE, 0, 0, MPI_COMM_WORLD);
             //printf("Worker %u : Matrix %u Determinant Obtained.\n",rank,matrix_determinant_result.id);
 
 
         }
-
 
     }
 
