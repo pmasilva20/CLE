@@ -26,7 +26,7 @@
 #include "utils.h"
 #include <time.h>
 
-/* General definitions */
+/** General definitions */
 
 # define  WORKTODO       1
 # define  NOMOREWORK     0
@@ -44,21 +44,18 @@
 int main (int argc, char *argv[]) {
 
 
-    /*Number of processes in the Group*/
+    /** Number of processes in the Group */
     int rank; 
 
-    /* Group size */
+    /** Group size */
     int totProc;
-
-    //TODO: Adicionar verificação n workers adicionar comentários, mudar nome de variáveis e alguns prints.
-    //TOD0: Testar com 512 e separar funções 
 
     MPI_Init (&argc, &argv);
     MPI_Comm_rank (MPI_COMM_WORLD, &rank);
     MPI_Comm_size (MPI_COMM_WORLD, &totProc);
 
     /*processing*/
-
+    /** Verify if there is enough processes **/
     if (totProc < 2) {
         printf("Requires at least two processes - one worker.\n");
         MPI_Finalize ();
@@ -67,23 +64,17 @@ int main (int argc, char *argv[]) {
 
     if (rank == 0){ 
         /**
-        * \brief Dispatcher process it is the frist process of the group 
+        * \brief Dispatcher process it is the first process of the group
         */
 
         /** time limits **/
         struct timespec start, finish;
 
-        /* Pointer to the text stream associated with the file name */
+        /** Pointer to the text stream associated with the file name */
         FILE *f;              
 
-        /* command */
+        /** Variable to command if there is work to do or not  */
         unsigned int whatToDo;
-
-        /* Counting variable */
-        unsigned int n;
-        
-        /* Counting variable */                                                                         
-        unsigned int r;                                                                         
 
         printf("Number of Worker: %d \n",totProc-1);
 
@@ -93,11 +84,11 @@ int main (int argc, char *argv[]) {
         /** Begin of Time measurement */
         clock_gettime (CLOCK_MONOTONIC_RAW, &start);
 
-        /* Check running parameters and load name into memory */
+        /** Check running parameters and load name into memory */
         if (argc != 2)
            { printf ("No file name!\n");
              whatToDo = NOMOREWORK;
-             for (n = 1; n < totProc; n++)
+             for (int n = 1; n < totProc; n++)
                MPI_Send (&whatToDo, 1, MPI_UNSIGNED, n, 0, MPI_COMM_WORLD);
              MPI_Finalize ();
              return EXIT_FAILURE;
@@ -106,7 +97,7 @@ int main (int argc, char *argv[]) {
         if ((f = fopen (argv[1], "r")) == NULL)
            { perror ("error on file opening for reading");
              whatToDo = NOMOREWORK;
-             for (n = 1; n < totProc; n++)
+             for (int n = 1; n < totProc; n++)
                MPI_Send (&whatToDo, 1, MPI_UNSIGNED, n, 0, MPI_COMM_WORLD);
              MPI_Finalize ();
              exit (EXIT_FAILURE);
@@ -131,12 +122,15 @@ int main (int argc, char *argv[]) {
 
         while(numberMatricesSent<file_info.numberOfMatrices){
             
-            /** Last Worker to receive work **/
+            /** Last Worker to receive work
+             * It will save the last worker that receives work.
+             * Useful for knowing which workers the dispatcher should expect to receive messages from.
+             * **/
             int lastWorker=0;
             
 
             for (int n = 1; n < totProc; n++){
-                
+
                 if (numberMatricesSent==file_info.numberOfMatrices){
                     break;
                 }
@@ -150,24 +144,29 @@ int main (int argc, char *argv[]) {
                 if(fread(&matrix1.matrix, sizeof(double), file_info.orderOfMatrices * file_info.orderOfMatrices, f)==0){
                     perror("Main: Error reading Matrix\n");
                 }
-                
+
+                /**There is Work to do **/
                 whatToDo=WORKTODO;
+
+                /** Update last Worker that received work*/
                 lastWorker=n;
                 
                 MPI_Send (&whatToDo, 1, MPI_UNSIGNED, n, 0, MPI_COMM_WORLD);
                 
                 MPI_Send (&matrix1, sizeof (struct Matrix), MPI_BYTE, n, 0, MPI_COMM_WORLD);
                 
-                printf("Matrix Processed -> %d to Worker %d \n",numberMatricesSent,n);
-                
+                printf("Matrix Processed -> Matrix %d to Worker %d \n",numberMatricesSent,n);
+
+                /** Update Number of work sent*/
                 numberMatricesSent++;
                 
             }
             
 
-
+            /** If lastWorker is > 0, it means that the dispatcher previously sent work to a certain number of workers
+             *  else it means that it didn't send work so it will not receive any partial result
+             * */
             if (lastWorker>0){
-                //printf("Last Worker Value: %d\n",lastWorker);
                 for (int n = 1; n< lastWorker+1; n++){
                         
                         struct MatrixResult matrixDeterminantResultReceived;
@@ -178,20 +177,18 @@ int main (int argc, char *argv[]) {
                         
                         printf("Dispatcher %u : Matrix %u Determinant Result from worker %d\n",rank,matrixDeterminantResultReceived.id,n);
 
-                        //printf("Reveived Matrix\n");  
-                            
                 }
             }
 
             
         }
 
-        /** CLose File */
+        /** Close File */
         fclose(f);
 
         /** Inform Workers that there is no more work - Workers will end */
         whatToDo = NOMOREWORK;
-        for (r = 1; r < totProc; r++){
+        for (int r = 1; r < totProc; r++){
             MPI_Send (&whatToDo, 1, MPI_UNSIGNED, r, 0, MPI_COMM_WORLD);
             printf("Worker %d : Ending\n",r);
         }
@@ -210,7 +207,9 @@ int main (int argc, char *argv[]) {
     else { 
         /** \brief  Worker Processes the remainder processes of the group **/
 
-        /* command */
+        /** Variable to command if there is work to do or not
+         *  If the message indicates no work, the Worker will End
+         * */
         unsigned int whatToDo;                                                                      
 
         /** Matrix Value */
@@ -218,7 +217,7 @@ int main (int argc, char *argv[]) {
 
         while(true){
 
-            /** Receive indication of existance of work or not */
+            /** Receive indication of existence of work or not */
             MPI_Recv (&whatToDo, 1, MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             
             /** If no more work, worker terminates */
@@ -231,8 +230,6 @@ int main (int argc, char *argv[]) {
             
             /** Receive Value Matrix */
             MPI_Recv (&val, sizeof (struct Matrix), MPI_BYTE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); 
-            
-            //printf("Worker %d : Obtained Matrix %u.\n",rank,val.id);
 
             matrix_determinant_result.id=val.id;
 
@@ -241,8 +238,6 @@ int main (int argc, char *argv[]) {
                 
             /** Send Partial Result of a Matrix Result **/
             MPI_Send (&matrix_determinant_result,sizeof(struct MatrixResult), MPI_BYTE, 0, 0, MPI_COMM_WORLD);
-            //printf("Worker %u : Matrix %u Determinant Obtained.\n",rank,matrix_determinant_result.id);
-
 
         }
 
