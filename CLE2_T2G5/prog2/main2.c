@@ -115,19 +115,26 @@ int main (int argc, char *argv[]) {
 
         printf("File %u - Order of Matrices to be read  = %d\n", file_info.id, file_info.orderOfMatrices);
 
+        /** Set File Properties */
         file_info.determinant_result = malloc(sizeof(struct MatrixResult) * file_info.numberOfMatrices);
-
+        
+        strcpy(file_info.name, argv[1]);
+        
         /* Number of Matrices sent*/
         int numberMatricesSent=0;
+
+        //TODO: ADD docs 
 
         struct MatrixResult *recData;
 
         struct Matrix *senData;
-        
+                
         bool allMsgRec, recVal, msgRec[totProc];
+        
         MPI_Request reqSnd[totProc], reqRec[totProc];
 
         recData=(struct MatrixResult*)malloc(sizeof(struct MatrixResult) * totProc );
+        
         senData=(struct Matrix*)malloc(sizeof(struct Matrix) * file_info.numberOfMatrices );
 
         while(numberMatricesSent<file_info.numberOfMatrices){
@@ -138,6 +145,7 @@ int main (int argc, char *argv[]) {
              * **/
             int lastWorker=0;
             
+            MPI_Request request;
 
             for (int n = (rank + 1) % totProc; n < totProc; n++){
 
@@ -145,8 +153,6 @@ int main (int argc, char *argv[]) {
                     break;
                 }
 
-                struct Matrix matrix1;
-                
                 senData[numberMatricesSent].fileid = file_info.id;
                 senData[numberMatricesSent].id = numberMatricesSent;
                 senData[numberMatricesSent].orderMatrix = file_info.orderOfMatrices;
@@ -163,7 +169,7 @@ int main (int argc, char *argv[]) {
                 lastWorker=n;
                
 
-                MPI_Send (&whatToDo, 1, MPI_UNSIGNED, n, 0, MPI_COMM_WORLD);
+                MPI_Isend (&whatToDo, 1, MPI_UNSIGNED, n, 0, MPI_COMM_WORLD,&request);
 
                 MPI_Isend (&senData[numberMatricesSent], sizeof (struct Matrix), MPI_BYTE, n, 0, MPI_COMM_WORLD,&reqSnd[n]);
                 
@@ -181,15 +187,15 @@ int main (int argc, char *argv[]) {
             if (lastWorker>0){
 
                 for (int n = (rank + 1) % totProc; n< lastWorker+1; n++){                        
-                        MPI_Irecv (&recData[n],sizeof (struct MatrixResult),MPI_BYTE, n, 0, MPI_COMM_WORLD, &reqRec[n]);
+                        MPI_Irecv (&recData[n],sizeof (struct MatrixResult),MPI_BYTE, n, 0, MPI_COMM_WORLD, &reqRec[n]);                        
                         msgRec[n] = false;
                 }
             
                 do
                 { allMsgRec = true;
                     for (int i = (rank + 1) % totProc; i < lastWorker+1; i++){
-                        if (!msgRec[i])
-                        { recVal = false;
+                        if (!msgRec[i]){ 
+                            recVal = false;
                             MPI_Test(&reqRec[i], (int *) &recVal, MPI_STATUS_IGNORE);
                             if (recVal){
                                 printf("Dispatcher %u : Matrix %u Determinant Result from worker %d\n",rank,recData[i].id,i);
@@ -235,10 +241,30 @@ int main (int argc, char *argv[]) {
         /** Matrix Value */
         struct Matrix val;
 
+        //TODO: VER QUAL USAR
+        
+        //MPI_Request request;
+
+        //MPI_Request request2;
+        
+        //bool recVal;
+
+        //bool recVal2;
+        
         while(true){
 
             /** Receive indication of existence of work or not */
+
             MPI_Recv (&whatToDo, 1, MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            
+            /**MPI_Irecv (&whatToDo, 1, MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &request);
+      
+            MPI_Test(&request, (int *) &recVal, MPI_STATUS_IGNORE);
+
+            while (!recVal){
+                MPI_Test(&request, (int *) &recVal, MPI_STATUS_IGNORE);
+
+            }**/
             
             /** If no more work, worker terminates */
             if (whatToDo== NOMOREWORK){
@@ -250,6 +276,14 @@ int main (int argc, char *argv[]) {
             
             /** Receive Value Matrix */
             MPI_Recv (&val, sizeof (struct Matrix), MPI_BYTE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); 
+
+            /*
+            MPI_Irecv (&val, sizeof (struct Matrix), MPI_BYTE, 0, 0, MPI_COMM_WORLD, &request2); 
+            
+            while (!recVal2){
+                MPI_Test(&request2, (int *) &recVal2, MPI_STATUS_IGNORE);
+
+            }*/
             
             matrix_determinant_result.id=val.id;
 
