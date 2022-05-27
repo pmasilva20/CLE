@@ -1,19 +1,13 @@
 /**
  *  \file sharedRegion.c
  *
- *  \brief Assignment 1 : Problem 2 - Determinant of a Square Matrix
+ *  \brief Assignment 2 : Problem 2 - Determinant of a Square Matrix
  * *
  *  Shared Region
  *
- *  Main Operations:
- *     \li putFileInfo
- *     \li putMatrixVal
- *     \li PrintResults
- *
- *  Workers Operations:
+ *  Dispatcher Operations:
  *     \li getMatrixVal
- *     \li putResults
- *
+ *     \li putMatrixVal
  *
  *  \author João Soares (93078) e Pedro Silva (93011)
  */
@@ -28,7 +22,7 @@
 #include "structures.h"
 
 /** \brief consumer threads return status array */
-extern int *statusWorks;
+extern int *statusDispatcherThreads;
 
 /** \brief  Number of Matrices to be processed by workers **/
 int matrixToProcess;
@@ -36,20 +30,8 @@ int matrixToProcess;
 /** \brief Number of matrices sent to SharedRegion */
 static unsigned int nMatricesSentToSharedRegion;
 
-/** \brief Number of workers waiting to access Stored Region of Matrices */
-static unsigned int nWorkersWaiting;
-
-/** \brief Number of matrices available in Shared Region */
-static unsigned int nMatricesInSharedRegion;
-
 /** \brief Matrices storage region */
 static struct Matrix matrix_mem[K];
-
-/** \brief Files storage region */
-static struct FileMatrices file_mem[N];
-
-/** \brief insertion pointer for file_mem */
-static unsigned int  ii_fileInfo;
 
 /** \brief insertion pointer for matrix_mem */
 static unsigned int  ii_matrix;
@@ -80,64 +62,30 @@ static pthread_once_t init = PTHREAD_ONCE_INIT;;
 static void initialization (void)
 {
 
-    ii_matrix = ri_matrix = nWorkersWaiting = 0;
+    ii_matrix = ri_matrix = 0;
     fullMatrixMem = false;
 
-    /* initialize of synchronization points */
+  /* initialize of synchronization points */
   pthread_cond_init (&fifoMatrixFull, NULL);
   pthread_cond_init (&fifoMatrixEmpty, NULL);
 }
 
 /**
- *  \brief Store a File (FileMatrices) value in the data transfer region.
- *
- *  Operation carried out by the Main.
- *
- *  \param val File (FileMatrices) to be stored
- */
-void putFileInfo(struct FileMatrices fileInfo){
-
-    /** Enter Monitor */
-    if(pthread_mutex_lock (&accessCR)!=0){
-        printf("Main: error on entering monitor(CF)");
-    }
-
-    /** Close pFile if not null */
-    if(file_mem[ii_fileInfo].pFile!=NULL){
-        fclose(file_mem[ii_fileInfo].pFile);
-    }
-
-    /** Update Number of Matrices to Process */
-    matrixToProcess += fileInfo.numberOfMatrices;
-
-    /** Save File in Shared Region */
-    file_mem[ii_fileInfo] = fileInfo;
-
-    ii_fileInfo++;
-
-    /** Exit Monitor */
-    if(pthread_mutex_unlock (&accessCR)!=0){
-        printf("Main: error on exiting monitor(CF)");
-    }
-
-}
-
-/**
  *  \brief Store a Matrix value in the data transfer region.
  *
- *  Operation carried out by the workers.
+ *  Operation carried out by the Thread Read Matrices of the File.
  *
- *  \param prodId worker identification
+ *  \param consId thread identification
  *  \param val Matrix to be stored
  */
 void putMatrixVal(unsigned int consId,struct Matrix matrix){
 
     /** Enter Monitor */
-    if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)
-    {errno = statusWorks[consId];
+    if ((statusDispatcherThreads[consId] = pthread_mutex_lock (&accessCR)) != 0)
+    {errno = statusDispatcherThreads[consId];
         perror ("error on entering monitor(CF)");
-        statusWorks[consId] = EXIT_FAILURE;
-        pthread_exit (&statusWorks[consId]);
+        statusDispatcherThreads[consId] = EXIT_FAILURE;
+        pthread_exit (&statusDispatcherThreads[consId]);
     }
 
     pthread_once (&init, initialization);
@@ -158,23 +106,20 @@ void putMatrixVal(unsigned int consId,struct Matrix matrix){
     /** Increase Number of Matrices sent to Shared Region */
     nMatricesSentToSharedRegion++;
 
-    /** Increase Number of Matrices in Shared Region */
-    nMatricesInSharedRegion++;
-
     /** Let Main know that a Matrix has been retrieved */
-    if ((statusWorks[consId] = pthread_cond_signal (&fifoMatrixEmpty)) != 0)
-    { errno = statusWorks[consId];
+    if ((statusDispatcherThreads[consId] = pthread_cond_signal (&fifoMatrixEmpty)) != 0)
+    { errno = statusDispatcherThreads[consId];
         perror ("error on signaling in fifoEmpty");
-        statusWorks[consId] = EXIT_FAILURE;
-        pthread_exit (&statusWorks[consId]);
+        statusDispatcherThreads[consId] = EXIT_FAILURE;
+        pthread_exit (&statusDispatcherThreads[consId]);
     }
 
     /** Exit monitor */
-    if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)
-    { errno = statusWorks[consId];
+    if ((statusDispatcherThreads[consId] = pthread_mutex_unlock (&accessCR)) != 0)
+    { errno = statusDispatcherThreads[consId];
         perror ("error on exiting monitor(CF)");
-        statusWorks[consId] = EXIT_FAILURE;
-        pthread_exit (&statusWorks[consId]);
+        statusDispatcherThreads[consId] = EXIT_FAILURE;
+        pthread_exit (&statusDispatcherThreads[consId]);
     }
 }
 
@@ -182,52 +127,56 @@ void putMatrixVal(unsigned int consId,struct Matrix matrix){
 /**
  *  \brief Get a Matrix value from the data transfer region.
  *
- *  Operation carried out by the workers.
+ *  Operation carried out by the Thread Send Matrices and Receive Results.
  *
- *  \param consId worker identification
+ *  \param consId thread identification
+ *  \param *matrix Address of Variable Matrix
  *
- *  \return value
+ *  \return Whatever there is Work to do;
  */
-int getMatrixVal(struct Matrix *matrix)
+int getMatrixVal(unsigned int consId,struct Matrix *matrix)
 {
     /** Enter Monitor */
-    if(pthread_mutex_lock (&accessCR)!=0){
-        printf("Main: error on entering monitor(CF)");
+    if ((statusDispatcherThreads[consId] = pthread_mutex_lock (&accessCR)) != 0)
+    {errno = statusDispatcherThreads[consId];
+        perror ("error on entering monitor(CF)");
+        statusDispatcherThreads[consId] = EXIT_FAILURE;
+        pthread_exit (&statusDispatcherThreads[consId]);
     }
-
 
     pthread_once (&init, initialization);
 
     while ((ii_matrix == ri_matrix) && !fullMatrixMem)
     {
-        /** Exit monitor */
-        if (pthread_cond_wait (&fifoMatrixEmpty, &accessCR) != 0)
-        {   perror ("error on waiting in fifoEmpty");
+        /** Wait if FIFO Empty  */
+        if ((statusDispatcherThreads[consId] = pthread_cond_wait (&fifoMatrixEmpty, &accessCR)) != 0)
+        { errno = statusDispatcherThreads[consId];
+            perror ("error on waiting in fifoEmpty");
+            statusDispatcherThreads[consId] = EXIT_FAILURE;
+            pthread_exit (&statusDispatcherThreads[consId]);
         }
         
     }
 
     *matrix = matrix_mem[ri_matrix];
-    matrix_mem[ri_matrix];
     ri_matrix = (ri_matrix + 1) % K;
 
     fullMatrixMem = false;
 
-
-
-    /** Decrease Number of Matrices in Shared Region */
-    nMatricesInSharedRegion--;
-
-    /** Let Main know that a Matrix has been retrieved */
-    if (pthread_cond_signal (&fifoMatrixFull) != 0)
-    { 
+    /** Let Thread Send Matrices & Receive Partial Results know that a Matrix has been retrieved */
+    if ((statusDispatcherThreads[consId] = pthread_cond_signal (&fifoMatrixFull)) != 0)
+    { errno = statusDispatcherThreads[consId];
         perror ("error on signaling in fifoFull");
+        statusDispatcherThreads[consId] = EXIT_FAILURE;
+        pthread_exit (&statusDispatcherThreads[consId]);
     }
 
     /** Exit monitor */
-    if (pthread_mutex_unlock (&accessCR) != 0)
-    { 
+    if ((statusDispatcherThreads[consId] = pthread_mutex_unlock (&accessCR)) != 0)
+    { errno = statusDispatcherThreads[consId];
         perror ("error on exiting monitor(CF)");
+        statusDispatcherThreads[consId] = EXIT_FAILURE;
+        pthread_exit (&statusDispatcherThreads[consId]);
     }
 
     /** There is Work to do*/
@@ -235,66 +184,6 @@ int getMatrixVal(struct Matrix *matrix)
 }
 
 
-/**
- *  \brief Store a Determinant value of Matrix in the data transfer region.
- *
- *  Operation carried out by the workers.
- *
- *  \param prodId worker identification
- *  \param val Determinant value of Matrix to be stored
- */
-void putResults(struct MatrixResult result, unsigned int consId){
 
-    /** Enter Monitor */
-    if ((statusWorks[consId] = pthread_mutex_lock (&accessCR)) != 0)
-    { errno = statusWorks[consId];
-        perror ("error on entering monitor(CF)");
-        statusWorks[consId] = EXIT_FAILURE;
-        pthread_exit (&statusWorks[consId]);
-    }
-
-    pthread_once (&init, initialization);
-
-    /** Save Results in Shared Region*/
-    for (int x = 0; x < ii_fileInfo; x++){
-        if(file_mem[x].id==result.fileid){
-            int id =result.id;
-            file_mem[x].determinant_result[id]=result;
-            break;
-        }
-    }
-
-    /** Exit monitor */
-    if ((statusWorks[consId] = pthread_mutex_unlock (&accessCR)) != 0)
-    { errno = statusWorks[consId];
-        perror ("error on exiting monitor(CF)");
-        statusWorks[consId] = EXIT_FAILURE;
-        pthread_exit (&statusWorks[consId]);
-    }
-}
-
-/**
- * Print in the terminal the results stored in the Shared Region
- * \param filesToProcess Number of Files
- */
-void PrintResults(int filesToProcess){
-    for (int x = 0; x < filesToProcess; x++){
-        printf("\nFile: %s\n",file_mem[x].name);
-        if(file_mem[x].numberOfMatrices) {
-            for (int a = 0; a < file_mem[x].numberOfMatrices; a++) {
-                printf("Matrix %d :\n", file_mem[x].determinant_result[a].id + 1);
-                printf("The determinant is %.3e\n", file_mem[x].determinant_result[a].determinant);
-            }
-
-            /** Free allocated memory */
-            free(file_mem[x].determinant_result);
-        }
-        else{
-            printf("Error Reading File\n");
-        }
-        printf("\n");
-
-    }
-}
 
 

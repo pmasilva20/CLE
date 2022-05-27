@@ -1,19 +1,13 @@
 /**
- *  \file sharedRegion.h
+ *  \file sharedRegion.c
  *
- *  \brief Assignment 1 : Problem 2 - Determinant of a Square Matrix
+ *  \brief Assignment 2 : Problem 2 - Determinant of a Square Matrix
  * *
  *  Shared Region
  *
- *  Main Operations:
- *     \li putFileInfo
- *     \li putMatrixVal
- *     \li PrintResults
- *
- *  Workers Operations:
+ *  Dispatcher Operations:
  *     \li getMatrixVal
- *     \li putResults
- *
+ *     \li putMatrixVal
  *
  *  \author João Soares (93078) e Pedro Silva (93011)
  */
@@ -27,49 +21,23 @@
 /**
  *  \brief Get a Matrix value from the data transfer region.
  *
- *  Operation carried out by the workers.
+ *  Operation carried out by the Thread Send Matrices and Receive Results.
  *
- *  \param consId worker identification
+ *  \param consId thread identification
  *  \param *matrix Address of Variable Matrix
  *
  *  \return Whatever there is Work to do;
  */
-int getMatrixVal(struct Matrix *matrix);
+int getMatrixVal(unsigned int consId,struct Matrix *matrix);
 
 /**
  *  \brief Store a Matrix value in the data transfer region.
  *
- *  Operation carried out by the workers.
+ *  Operation carried out by the Thread Read Matrices of the File.
  *
- *  \param prodId worker identification
+ *  \param consId thread identification
  *  \param val Matrix to be stored
  */
 extern void putMatrixVal(unsigned int consId,struct Matrix matrix);
-
-/**
- *  \brief Store a Determinant value of Matrix in the data transfer region.
- *
- *  Operation carried out by the workers.
- *
- *  \param prodId worker identification
- *  \param val Determinant value of Matrix to be stored
- */
-extern void putResults(struct MatrixResult result, unsigned int consId);
-
-
-/**
- *  \brief Store a File (FileMatrices) value in the data transfer region.
- *
- *  Operation carried out by the Main.
- *
- *  \param val File (FileMatrices) to be stored
- */
-extern void putFileInfo(struct FileMatrices fileInfo);
-
-/**
- *  \brief Print in the terminal the results stored in the Shared Region
- *  \param filesToProcess Number of Files
- */
-extern void PrintResults(int filesToProcess);
 
 #endif
