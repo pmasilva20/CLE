@@ -9,7 +9,7 @@
  *
  * 
  *  Usage:
- *      \li mpicc -Wall -o main main.c utils.c ^CaredRegion.c -lpthread -lm
+ *      \li mpicc -Wall -o main main.c utils.c sharedRegion.c -lpthread -lm
  *      \li mpiexec -n <number_processes> ./main <file_name>
  *      \li Example: mpiexec -n 5 ./main mat128_32.bin
  * 
@@ -192,10 +192,7 @@ int main (int argc, char *argv[]) {
         
         /** Print Elapsed Time */
         printf ("\nElapsed time = %.6f s\n",  (finish.tv_sec - start.tv_sec) / 1.0 + (finish.tv_nsec - start.tv_nsec) / 1000000000.0);        
-
     }
-
-
     else { 
         /** \brief  Worker Processes the remainder processes of the group **/
 
@@ -207,17 +204,11 @@ int main (int argc, char *argv[]) {
         /** Matrix Value */
         struct Matrix val;
         
-        //TODO: METER DOCUMENTAÇÃO
-
-        MPI_Request reqMatrix;
-
-        MPI_Request reqWhatoDo;
+        /** MPI_Request handles for the non-blocking operations of reciving Matrice, WhatToDo and send Determinant Results */
+        MPI_Request reqMatrix, reqWhatoDo, reqResultDeterminant;
         
-        MPI_Request reqResultDeterminant;
-        
-        bool recValMatrix;
-
-        bool recValWhatToDo;
+        /** Variables used to verify if the non-blocking operation are complete*/
+        bool recValMatrix,recValWhatToDo;
         
         while(true){
             //TODO: METER DOCUMENTAÇÃO
@@ -225,7 +216,8 @@ int main (int argc, char *argv[]) {
             MPI_Irecv (&whatToDo, 1, MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &reqWhatoDo);
       
             recValMatrix=false;
-
+            
+            /** Verify if operation Receive WhatToDo is Complete */ 
             while (!recValWhatToDo){
                 MPI_Test(&reqWhatoDo, (int *) &recValWhatToDo, MPI_STATUS_IGNORE);
             }
@@ -243,6 +235,7 @@ int main (int argc, char *argv[]) {
             
             recValMatrix=false;
 
+            /** Verify if operation  Receive Matrix is Complete */ 
             while (!recValMatrix){
                 MPI_Test(&reqMatrix, (int *) &recValMatrix, MPI_STATUS_IGNORE);
             }
@@ -252,7 +245,7 @@ int main (int argc, char *argv[]) {
             /** Calculate Matrix Determinant */
             matrix_determinant_result.determinant=calculateMatrixDeterminant(val.orderMatrix,val.matrix);
                 
-            /** Send Partial Result of a Matrix Result **/
+            /** Send Result of a Matrix Determinant **/
             MPI_Isend (&matrix_determinant_result,sizeof(struct MatrixResult), MPI_BYTE, 0, 0, MPI_COMM_WORLD,&reqResultDeterminant);
         }
     }
@@ -325,7 +318,7 @@ static void *sendMatricesReceiveResults (void *par){
     /** Array to Send Data (Matrices (Matrix))*/
     struct Matrix *senData;
 
-    /** Variables used to verify if the non-blocking operation is complete*/     
+    /** Variables used to verify if the non-blocking operation are complete*/     
     bool allMsgRec, recVal, msgRec[totProc];
     
     /** MPI_Request handles for the non-blocking operations of sending Matrices and Receive partial Results */
