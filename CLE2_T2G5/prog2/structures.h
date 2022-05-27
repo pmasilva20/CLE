@@ -10,7 +10,7 @@
 
 #ifndef PROG2_STRUCTURES_H
 #define PROG2_STRUCTURES_H
-
+#include <stdio.h>
 /** Structure of Matrix processed Result */
 struct MatrixResult{
     int id;
@@ -21,6 +21,7 @@ struct MatrixResult{
 /** Structure of File */
 struct FileMatrices{
     int id;
+    FILE *pFile;
     char name[40];
     int numberOfMatrices;
     int orderOfMatrices;
