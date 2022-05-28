@@ -95,18 +95,20 @@ int main (int argc, char *argv[]) {
 
         /* Check running parameters and load name into memory */
         if (argc != 2)
-           { printf ("No file name!\n");
-             whatToDo = NOMOREWORK;
-             for (n = 1; n < totProc; n++)
+           { 
+            printf ("No file name!\n");
+            whatToDo = NOMOREWORK;
+            for (n = 1; n < totProc; n++)
                MPI_Send (&whatToDo, 1, MPI_UNSIGNED, n, 0, MPI_COMM_WORLD);
-             MPI_Finalize ();
-             return EXIT_FAILURE;
+            MPI_Finalize ();
+            return EXIT_FAILURE;
            }
 
         if ((f = fopen (argv[1], "r")) == NULL)
-           { perror ("error on file opening for reading");
-             whatToDo = NOMOREWORK;
-             for (n = 1; n < totProc; n++)
+           { 
+            perror ("error on file opening for reading");
+            whatToDo = NOMOREWORK;
+            for (n = 1; n < totProc; n++)
                MPI_Send (&whatToDo, 1, MPI_UNSIGNED, n, 0, MPI_COMM_WORLD);
              MPI_Finalize ();
              exit (EXIT_FAILURE);
