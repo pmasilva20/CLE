@@ -1,7 +1,7 @@
 /**
  *  \file structures.h
  *
- *  \brief Assignment 1 : Problem 2 - Determinant of a Square Matrix
+ *  \brief Assignment 2 : Problem 2 - Determinant of a Square Matrix
  *
  *  Definition of Structures
  *
@@ -10,7 +10,7 @@
 
 #ifndef PROG2_STRUCTURES_H
 #define PROG2_STRUCTURES_H
-#include <stdio.h>
+
 /** Structure of Matrix processed Result */
 struct MatrixResult{
     int id;

@@ -93,9 +93,12 @@ void putMatrixVal(unsigned int consId,struct Matrix matrix){
 
     /** While FIFO full wait */
     while (fullMatrixMem){
-        if(pthread_cond_wait (&fifoMatrixFull, &accessCR)!=0){
-            printf("Main: error on waiting in fifoFull");
-        }
+        if ((statusDispatcherThreads[consId] = pthread_cond_wait (&fifoMatrixFull, &accessCR)) != 0)
+            { errno = statusDispatcherThreads[consId];
+                perror ("error on waiting in fifoFull");
+                statusDispatcherThreads[consId] = EXIT_FAILURE;
+                pthread_exit (&statusDispatcherThreads[consId]);
+            }
     };
 
     matrix_mem[ii_matrix]= matrix;

@@ -15,9 +15,6 @@
 #ifndef FIFO_H
 #define FIFO_H
 
-#include <stdbool.h>
-#include "structures.h"
-
 /**
  *  \brief Get a Matrix value from the data transfer region.
  *
