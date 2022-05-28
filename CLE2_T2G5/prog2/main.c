@@ -206,7 +206,7 @@ int main (int argc, char *argv[]) {
         /** Matrix Value */
         struct Matrix val;
         
-        /** MPI_Request handles for the non-blocking operations of reciving Matrice, WhatToDo and send Determinant Results */
+        /** MPI_Request handles for the non-blocking operations of receiving Matrices, WhatToDo and send Determinant Results */
         MPI_Request reqMatrix, reqWhatoDo, reqResultDeterminant;
         
         /** Variables used to verify if the non-blocking operation are complete*/
