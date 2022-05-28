@@ -159,7 +159,7 @@ int main (int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
         else{
-            printf("Thread Read File Matrices Created !\n");
+            printf("Thread Read File Matrices Created!\n");
         }
 
         /** Generation of Thread to Send Matrices to Workers and Receive Partial Results **/
@@ -189,9 +189,11 @@ int main (int argc, char *argv[]) {
 
         /** Print Final Results */
         printResults(file_info);
-        
+
         /** Print Elapsed Time */
-        printf ("\nElapsed time = %.6f s\n",  (finish.tv_sec - start.tv_sec) / 1.0 + (finish.tv_nsec - start.tv_nsec) / 1000000000.0);        
+        printf ("Elapsed time = %.6f s\n",  (finish.tv_sec - start.tv_sec) / 1.0 + (finish.tv_nsec - start.tv_nsec) / 1000000000.0); 
+      
+       
     }
     else { 
         /** \brief  Worker Processes the remainder processes of the group **/
@@ -211,7 +213,6 @@ int main (int argc, char *argv[]) {
         bool recValMatrix,recValWhatToDo;
         
         while(true){
-            //TODO: METER DOCUMENTAÇÃO
             /** Receive indication of existence of work or not */            
             MPI_Irecv (&whatToDo, 1, MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &reqWhatoDo);
       
@@ -369,14 +370,14 @@ static void *sendMatricesReceiveResults (void *par){
              *  else it means that it didn't send work so it will not receive any partial result
              * */
             if (lastWorker>0){
-                for (int n = (rank + 1) % totProc; n< totProc; n++){                        
+                for (int n = (rank + 1) % totProc; n< lastWorker+1; n++){                        
                         MPI_Irecv (&recData[n],sizeof (struct MatrixResult),MPI_BYTE, n, 0, MPI_COMM_WORLD, &reqRec[n]);                        
                         msgRec[n] = false;
                 }
             
                 do
                 { allMsgRec = true;
-                    for (int i = (rank + 1) % totProc; i < totProc; i++){
+                    for (int i = (rank + 1) % totProc; i < lastWorker+1; i++){
                         if (!msgRec[i]){ 
                             recVal = false;
                             MPI_Test(&reqRec[i], (int *) &recVal, MPI_STATUS_IGNORE);
@@ -396,9 +397,15 @@ static void *sendMatricesReceiveResults (void *par){
     whatToDo = NOMOREWORK;
     for (int r = 1; r < totProc; r++){
         MPI_Send (&whatToDo, 1, MPI_UNSIGNED, r, 0, MPI_COMM_WORLD);
-        printf("Thread %d : Ending\n",r);
+        printf("Worker %d : Ending\n",r);
     }
+    
+    /** Free allocated memory */
+    free(senData);
 
+    /** Free allocated memory */
+    free(recData);
+    
     statusDispatcherThreads[id] = EXIT_SUCCESS;
     pthread_exit (&statusDispatcherThreads[id]);
     
