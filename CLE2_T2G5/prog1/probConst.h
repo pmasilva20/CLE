@@ -12,7 +12,7 @@
 #define PROBCONST_H_
 
 /** \brief Number of characters(encoded in UTF-8) per chunk */
-#define chunkSize 20
+#define chunkSize 100
 
 
 /** \brief Chunks transfer region nominal capacity (in number of Chunks that can be stored) */
