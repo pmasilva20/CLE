@@ -216,7 +216,6 @@ int main(int argc, char *argv[])
     {
         /** \brief  Worker Processes the remainder processes of the group **/
 
-        printf("Worker %d starting up\n", rank);
         /* command */
         unsigned int whatToDo;
 
@@ -295,8 +294,6 @@ static void *readFileChunks (void *par){
     //Read files, make chunks, store them in Shared Region
     for(int i = 0; i < totalFiles; i++){
         char* filename = fileNames[i+1];
-
-        printf("Dispatcher: using file %s",filename);
         
 
         if ((f = fopen(filename, "r")) == NULL)
@@ -368,7 +365,7 @@ static void *sendChunksReceiveResults (void *par){
     }
 
     lastWorker = 1;
-    printf("Thread sendChunks dispatcher: trying to receive chunk results for %d chunks in total\n",numberChunksSent);
+
     /** Receive partial results for each file, add them to file results structure */
     for (int i = 0; i < numberChunksSent; i++)
     {
@@ -385,17 +382,14 @@ static void *sendChunksReceiveResults (void *par){
         file_info->nWords += chunkResultsReceived.nWords;
 
     }
-    printf("Dispatcher %u : Got all results\n", rank);
 
     /** Inform Workers that there is no more work - Workers will end */
     whatToDo = NOMOREWORK;
     for (int r = 1; r < totProc; r++)
     {
         MPI_Send(&whatToDo, 1, MPI_UNSIGNED, r, 0, MPI_COMM_WORLD);
-        printf("Dispatcher ending worker %d : Ending\n", r);
     }
 
-    printf("Thread sendChunksReceiveResults has finished\n");
     statusDispatcherThreads[id] = EXIT_SUCCESS;
     pthread_exit (&statusDispatcherThreads[id]);
 }

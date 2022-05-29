@@ -243,6 +243,5 @@ void printResults(struct FileText results){
     printf("N. of words beginning with a vowel = %d\n",results.nVowelStartWords);
     printf("N. of words ending with a consonant = %d\n",results.nConsonantEndWord);
 
-    printf("\n");
 
 }
