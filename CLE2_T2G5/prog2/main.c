@@ -9,7 +9,7 @@
  *
  * 
  *  Usage:
- *      \li mpicc -Wall -o main main.c utils.c sharedRegion.c -lpthread -lm
+ *      \li mmpicc -Wall -O3 -o main main.c utils.c sharedRegion.c -lpthread -lm
  *      \li mpiexec -n <number_processes> ./main <file_name>
  *      \li Example: mpiexec -n 5 ./main mat128_32.bin
  * 
