@@ -25,9 +25,27 @@
  */
 extern void printResults(struct FileText results);
 
-
+/**
+ * Process a file into various text chunks, store them in Shared Region
+ * \param pFile Pointer to file to be processed
+ * \param filename Pointer to char array with filename
+ * \param fileId id of file processed
+ * \return Number of chunks made
+ */
 int makeChunks(FILE *pFile, char *filename, int fileId);
 
+/**
+ * Send a text chunk
+ * Needs to be sent separatelly due to use of dinamically allocated memory
+ * \param chunk Structure of text chunk to be sent
+ * \param whatToDo Command to be sent
+ * \param n Worker Id to send to
+ */
 void sendChunkText(struct ChunkText chunk, unsigned int whatToDo, int n);
 
+/**
+ * Process a text chunk
+ * \param chunk Structure of a text chunk
+ * \return Structure of Partial File Results with metrics obtained for the chunk processed
+ */
 struct ChunkResults processChunk(struct ChunkText chunk);
