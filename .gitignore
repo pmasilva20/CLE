@@ -1,1 +1,7 @@
 .vscode
+CLE1_T2G5/prog1/.idea
+CLE1_T2G5/prog1/cmake-build-debug
+CLE2_T2G5/prog1/.idea
+CLE2_T2G5/prog1/cmake-build-debug
+.idea
+cmake-build-debug

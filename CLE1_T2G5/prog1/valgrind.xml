@@ -1,0 +1,448 @@
+<?xml version="1.0"?>
+
+<valgrindoutput>
+
+<protocolversion>4</protocolversion>
+<protocoltool>memcheck</protocoltool>
+
+<preamble>
+  <line>Memcheck, a memory error detector</line>
+  <line>Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.</line>
+  <line>Using Valgrind-3.15.0 and LibVEX; rerun with -h for copyright info</line>
+  <line>Command: /home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1/cmake-build-debug/prog1 -f text0.txt -f text1.txt -f text2.txt -f text3.txt -f text4.txt -t 5</line>
+</preamble>
+
+<pid>145029</pid>
+<ppid>7685</ppid>
+<tool>memcheck</tool>
+
+<args>
+  <vargv>
+    <exe>/usr/bin/valgrind.bin</exe>
+    <arg>--tool=memcheck</arg>
+    <arg>--xml=yes</arg>
+    <arg>--xml-file=/tmp/clion-valgrind18d08a00-bcbd-4d1c-8b6a-a5318aa8d720/valgrind_output_%p</arg>
+    <arg>--gen-suppressions=all</arg>
+    <arg>--leak-check=full</arg>
+    <arg>--leak-resolution=med</arg>
+    <arg>--track-origins=yes</arg>
+    <arg>--vgdb=no</arg>
+  </vargv>
+  <argv>
+    <exe>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1/cmake-build-debug/prog1</exe>
+    <arg>-f</arg>
+    <arg>text0.txt</arg>
+    <arg>-f</arg>
+    <arg>text1.txt</arg>
+    <arg>-f</arg>
+    <arg>text2.txt</arg>
+    <arg>-f</arg>
+    <arg>text3.txt</arg>
+    <arg>-f</arg>
+    <arg>text4.txt</arg>
+    <arg>-t</arg>
+    <arg>5</arg>
+  </argv>
+</args>
+
+<status>
+  <state>RUNNING</state>
+  <time>00:00:00:00.091 </time>
+</status>
+
+<error>
+  <unique>0x0</unique>
+  <tid>6</tid>
+  <kind>InvalidRead</kind>
+  <what>Invalid read of size 4</what>
+  <stack>
+    <frame>
+      <ip>0x10AF35</ip>
+      <obj>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1/cmake-build-debug/prog1</obj>
+      <fn>processChunk</fn>
+      <dir>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1</dir>
+      <file>assign1_worker.c</file>
+      <line>41</line>
+    </frame>
+    <frame>
+      <ip>0x109D28</ip>
+      <obj>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1/cmake-build-debug/prog1</obj>
+      <fn>worker</fn>
+      <dir>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1</dir>
+      <file>main.c</file>
+      <line>176</line>
+    </frame>
+    <frame>
+      <ip>0x4873608</ip>
+      <obj>/lib/x86_64-linux-gnu/libpthread-2.31.so</obj>
+      <fn>start_thread</fn>
+      <dir>/build/glibc-sMfBJT/glibc-2.31/nptl</dir>
+      <file>pthread_create.c</file>
+      <line>477</line>
+    </frame>
+    <frame>
+      <ip>0x49AD162</ip>
+      <obj>/lib/x86_64-linux-gnu/libc-2.31.so</obj>
+      <fn>clone</fn>
+      <dir>/build/glibc-sMfBJT/glibc-2.31/misc/../sysdeps/unix/sysv/linux/x86_64</dir>
+      <file>clone.S</file>
+      <line>95</line>
+    </frame>
+  </stack>
+  <auxwhat>Address 0x4b5e630 is 0 bytes inside a block of size 80 free'd</auxwhat>
+  <stack>
+    <frame>
+      <ip>0x483CA3F</ip>
+      <obj>/usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so</obj>
+      <fn>free</fn>
+    </frame>
+    <frame>
+      <ip>0x10B03B</ip>
+      <obj>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1/cmake-build-debug/prog1</obj>
+      <fn>processChunk</fn>
+      <dir>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1</dir>
+      <file>assign1_worker.c</file>
+      <line>76</line>
+    </frame>
+    <frame>
+      <ip>0x109D28</ip>
+      <obj>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1/cmake-build-debug/prog1</obj>
+      <fn>worker</fn>
+      <dir>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1</dir>
+      <file>main.c</file>
+      <line>176</line>
+    </frame>
+    <frame>
+      <ip>0x4873608</ip>
+      <obj>/lib/x86_64-linux-gnu/libpthread-2.31.so</obj>
+      <fn>start_thread</fn>
+      <dir>/build/glibc-sMfBJT/glibc-2.31/nptl</dir>
+      <file>pthread_create.c</file>
+      <line>477</line>
+    </frame>
+    <frame>
+      <ip>0x49AD162</ip>
+      <obj>/lib/x86_64-linux-gnu/libc-2.31.so</obj>
+      <fn>clone</fn>
+      <dir>/build/glibc-sMfBJT/glibc-2.31/misc/../sysdeps/unix/sysv/linux/x86_64</dir>
+      <file>clone.S</file>
+      <line>95</line>
+    </frame>
+  </stack>
+  <auxwhat>Block was alloc'd at</auxwhat>
+  <stack>
+    <frame>
+      <ip>0x483DD99</ip>
+      <obj>/usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so</obj>
+      <fn>calloc</fn>
+    </frame>
+    <frame>
+      <ip>0x109F59</ip>
+      <obj>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1/cmake-build-debug/prog1</obj>
+      <fn>makeChunks</fn>
+      <dir>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1</dir>
+      <file>assign1_functions.c</file>
+      <line>95</line>
+    </frame>
+    <frame>
+      <ip>0x109AF2</ip>
+      <obj>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1/cmake-build-debug/prog1</obj>
+      <fn>main</fn>
+      <dir>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1</dir>
+      <file>main.c</file>
+      <line>126</line>
+    </frame>
+  </stack>
+  <suppression>
+    <sname>insert_a_suppression_name_here</sname>
+    <skind>Memcheck:Addr4</skind>
+    <sframe> <fun>processChunk</fun> </sframe>
+    <sframe> <fun>worker</fun> </sframe>
+    <sframe> <fun>start_thread</fun> </sframe>
+    <sframe> <fun>clone</fun> </sframe>
+    <rawtext>
+<![CDATA[
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Addr4
+   fun:processChunk
+   fun:worker
+   fun:start_thread
+   fun:clone
+}
+]]>
+    </rawtext>
+  </suppression>
+</error>
+
+  <suppression>
+    <sname>insert_a_suppression_name_here</sname>
+    <skind>Memcheck:Addr4</skind>
+    <sframe> <fun>processChunk</fun> </sframe>
+    <sframe> <fun>worker</fun> </sframe>
+    <sframe> <fun>start_thread</fun> </sframe>
+    <sframe> <fun>clone</fun> </sframe>
+    <rawtext>
+<![CDATA[
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Addr4
+   fun:processChunk
+   fun:worker
+   fun:start_thread
+   fun:clone
+}
+]]>
+    </rawtext>
+  </suppression>
+<error>
+  <unique>0x14</unique>
+  <tid>6</tid>
+  <kind>InvalidFree</kind>
+  <what>Invalid free() / delete / delete[] / realloc()</what>
+  <stack>
+    <frame>
+      <ip>0x483CA3F</ip>
+      <obj>/usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so</obj>
+      <fn>free</fn>
+    </frame>
+    <frame>
+      <ip>0x10B03B</ip>
+      <obj>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1/cmake-build-debug/prog1</obj>
+      <fn>processChunk</fn>
+      <dir>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1</dir>
+      <file>assign1_worker.c</file>
+      <line>76</line>
+    </frame>
+    <frame>
+      <ip>0x109D28</ip>
+      <obj>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1/cmake-build-debug/prog1</obj>
+      <fn>worker</fn>
+      <dir>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1</dir>
+      <file>main.c</file>
+      <line>176</line>
+    </frame>
+    <frame>
+      <ip>0x4873608</ip>
+      <obj>/lib/x86_64-linux-gnu/libpthread-2.31.so</obj>
+      <fn>start_thread</fn>
+      <dir>/build/glibc-sMfBJT/glibc-2.31/nptl</dir>
+      <file>pthread_create.c</file>
+      <line>477</line>
+    </frame>
+    <frame>
+      <ip>0x49AD162</ip>
+      <obj>/lib/x86_64-linux-gnu/libc-2.31.so</obj>
+      <fn>clone</fn>
+      <dir>/build/glibc-sMfBJT/glibc-2.31/misc/../sysdeps/unix/sysv/linux/x86_64</dir>
+      <file>clone.S</file>
+      <line>95</line>
+    </frame>
+  </stack>
+  <auxwhat>Address 0x4b5e630 is 0 bytes inside a block of size 80 free'd</auxwhat>
+  <stack>
+    <frame>
+      <ip>0x483CA3F</ip>
+      <obj>/usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so</obj>
+      <fn>free</fn>
+    </frame>
+    <frame>
+      <ip>0x10B03B</ip>
+      <obj>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1/cmake-build-debug/prog1</obj>
+      <fn>processChunk</fn>
+      <dir>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1</dir>
+      <file>assign1_worker.c</file>
+      <line>76</line>
+    </frame>
+    <frame>
+      <ip>0x109D28</ip>
+      <obj>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1/cmake-build-debug/prog1</obj>
+      <fn>worker</fn>
+      <dir>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1</dir>
+      <file>main.c</file>
+      <line>176</line>
+    </frame>
+    <frame>
+      <ip>0x4873608</ip>
+      <obj>/lib/x86_64-linux-gnu/libpthread-2.31.so</obj>
+      <fn>start_thread</fn>
+      <dir>/build/glibc-sMfBJT/glibc-2.31/nptl</dir>
+      <file>pthread_create.c</file>
+      <line>477</line>
+    </frame>
+    <frame>
+      <ip>0x49AD162</ip>
+      <obj>/lib/x86_64-linux-gnu/libc-2.31.so</obj>
+      <fn>clone</fn>
+      <dir>/build/glibc-sMfBJT/glibc-2.31/misc/../sysdeps/unix/sysv/linux/x86_64</dir>
+      <file>clone.S</file>
+      <line>95</line>
+    </frame>
+  </stack>
+  <auxwhat>Block was alloc'd at</auxwhat>
+  <stack>
+    <frame>
+      <ip>0x483DD99</ip>
+      <obj>/usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so</obj>
+      <fn>calloc</fn>
+    </frame>
+    <frame>
+      <ip>0x109F59</ip>
+      <obj>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1/cmake-build-debug/prog1</obj>
+      <fn>makeChunks</fn>
+      <dir>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1</dir>
+      <file>assign1_functions.c</file>
+      <line>95</line>
+    </frame>
+    <frame>
+      <ip>0x109AF2</ip>
+      <obj>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1/cmake-build-debug/prog1</obj>
+      <fn>main</fn>
+      <dir>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1</dir>
+      <file>main.c</file>
+      <line>126</line>
+    </frame>
+  </stack>
+  <suppression>
+    <sname>insert_a_suppression_name_here</sname>
+    <skind>Memcheck:Free</skind>
+    <sframe> <fun>free</fun> </sframe>
+    <sframe> <fun>processChunk</fun> </sframe>
+    <sframe> <fun>worker</fun> </sframe>
+    <sframe> <fun>start_thread</fun> </sframe>
+    <sframe> <fun>clone</fun> </sframe>
+    <rawtext>
+<![CDATA[
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:free
+   fun:processChunk
+   fun:worker
+   fun:start_thread
+   fun:clone
+}
+]]>
+    </rawtext>
+  </suppression>
+</error>
+
+  <suppression>
+    <sname>insert_a_suppression_name_here</sname>
+    <skind>Memcheck:Free</skind>
+    <sframe> <fun>free</fun> </sframe>
+    <sframe> <fun>processChunk</fun> </sframe>
+    <sframe> <fun>worker</fun> </sframe>
+    <sframe> <fun>start_thread</fun> </sframe>
+    <sframe> <fun>clone</fun> </sframe>
+    <rawtext>
+<![CDATA[
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Free
+   fun:free
+   fun:processChunk
+   fun:worker
+   fun:start_thread
+   fun:clone
+}
+]]>
+    </rawtext>
+  </suppression>
+
+<status>
+  <state>FINISHED</state>
+  <time>00:00:00:01.585 </time>
+</status>
+
+<error>
+  <unique>0x16</unique>
+  <tid>1</tid>
+  <kind>Leak_DefinitelyLost</kind>
+  <xwhat>
+    <text>92 bytes in 1 blocks are definitely lost in loss record 2 of 2</text>
+    <leakedbytes>92</leakedbytes>
+    <leakedblocks>1</leakedblocks>
+  </xwhat>
+  <stack>
+    <frame>
+      <ip>0x483DFAF</ip>
+      <obj>/usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so</obj>
+      <fn>realloc</fn>
+    </frame>
+    <frame>
+      <ip>0x109EC2</ip>
+      <obj>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1/cmake-build-debug/prog1</obj>
+      <fn>makeChunks</fn>
+      <dir>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1</dir>
+      <file>assign1_functions.c</file>
+      <line>76</line>
+    </frame>
+    <frame>
+      <ip>0x109AF2</ip>
+      <obj>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1/cmake-build-debug/prog1</obj>
+      <fn>main</fn>
+      <dir>/home/pmasilva20/Desktop/CLE/CLE/CLE1_T2G5/prog1</dir>
+      <file>main.c</file>
+      <line>126</line>
+    </frame>
+  </stack>
+  <suppression>
+    <sname>insert_a_suppression_name_here</sname>
+    <skind>Memcheck:Leak</skind>
+    <skaux>match-leak-kinds: definite</skaux>
+    <sframe> <fun>realloc</fun> </sframe>
+    <sframe> <fun>makeChunks</fun> </sframe>
+    <sframe> <fun>main</fun> </sframe>
+    <rawtext>
+<![CDATA[
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:realloc
+   fun:makeChunks
+   fun:main
+}
+]]>
+    </rawtext>
+  </suppression>
+</error>
+
+  <suppression>
+    <sname>insert_a_suppression_name_here</sname>
+    <skind>Memcheck:Leak</skind>
+    <skaux>match-leak-kinds: definite</skaux>
+    <sframe> <fun>realloc</fun> </sframe>
+    <sframe> <fun>makeChunks</fun> </sframe>
+    <sframe> <fun>main</fun> </sframe>
+    <rawtext>
+<![CDATA[
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:realloc
+   fun:makeChunks
+   fun:main
+}
+]]>
+    </rawtext>
+  </suppression>
+<errorcounts>
+  <pair>
+    <count>1</count>
+    <unique>0x14</unique>
+  </pair>
+  <pair>
+    <count>20</count>
+    <unique>0x0</unique>
+  </pair>
+</errorcounts>
+
+<suppcounts>
+</suppcounts>
+
+</valgrindoutput>
+
+
