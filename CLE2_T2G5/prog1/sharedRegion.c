@@ -5,14 +5,12 @@
  *
  *  Shared Region
  *
- *  Main Operations:
- *      \li finishedProcessingChunks
- *      \li getFileText
+ *  Dispatcher Operations:
  *      \li putChunkText
+ *      \li freeChunks
  *
  *  Workers Operations:
  *      \li getChunks
- *      \li putFileText
  *
  *  \author João Soares (93078) e Pedro Silva (93011)
  */
@@ -155,34 +153,12 @@ bool getChunks(struct ChunkText* chunk, unsigned int consId) {
 
     return true;
 }
-/**
- * \brief Signal that all text files have been read by main and divided into chunks.
- * Signals any awaiting worker thread.
- *
- * Operation carried out by main.
- */
-void finishedProcessingChunks(){
-    /** Enter Monitor */
-    if(pthread_mutex_lock (&accessCR)!=0){
-        printf("Main:Error on entering monitor(CF)");
-    }
-
-    pthread_once (&init, initialization);
-    finishedProcessing = true;
-    pthread_cond_broadcast(&fifoChunkEmpty);
-
-    /** Exit monitor */
-    if(pthread_mutex_unlock (&accessCR)!=0){
-        printf("Main: error on exiting monitor(CF)");
-    }
-}
-
 
 
 /**
  * \brief Insert a Text Chunk into Shared Region
  *
- * Operation done by main
+ * Operation done by dispatcher
  * @param chunk Chunk to be inserted
  */
 void putChunkText(struct ChunkText chunk){
@@ -234,7 +210,7 @@ void putChunkText(struct ChunkText chunk){
 /**
  * \brief Free any memory allocated previously in Shared Region.
  *
- * Operation carried out by main.
+ * Operation carried out by dispatcher.
  */
 void freeChunks(){
     /** Enter Monitor */

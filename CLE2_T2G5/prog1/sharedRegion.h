@@ -5,9 +5,9 @@
  *
  *  Shared Region
  *
- *  Main Operations:
- *      \li finishedProcessingChunks
+ *  Dispatcher Operations:
  *      \li putChunkText
+ *      \li freeChunks
  *
  *  Workers Operations:
  *      \li getChunks
@@ -29,19 +29,11 @@ extern int putChunkText(struct ChunkText chunk);
 
 
 /**
- * \brief Signal that all text files have been read by main and divided into chunks.
- * Signals any awaiting worker thread.
- *
- * Operation carried out by main.
- */
-void finishedProcessingChunks();
-
-/**
  * \brief Check if there are any chunks in Shared Region to process or if main is still processing new chunks.
  * If there are no chunks in Shared Region but main is still processing them, then it waits until a chunks is put.
  * Else retrieves a stored Text Chunk to be processed.
  *
- * Operation carried out by the workers.
+ * Operation carried out by the dispatcher.
  * @return True if there are chunks to be processed still
  */
 bool getChunks(struct ChunkText *chunk, unsigned int consId);
@@ -49,7 +41,7 @@ bool getChunks(struct ChunkText *chunk, unsigned int consId);
 /**
  * \brief Free any memory allocated previously in Shared Region.
  *
- * Operation carried out by main.
+ * Operation carried out by dispatcher.
  */
 void freeChunks();
 

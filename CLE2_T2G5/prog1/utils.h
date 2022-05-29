@@ -26,7 +26,7 @@
 extern void printResults(struct FileText results);
 
 
-int makeChunks(FILE *pFile, char *filename, int fileId, int workerNumber);
+int makeChunks(FILE *pFile, char *filename, int fileId);
 
 void sendChunkText(struct ChunkText chunk, unsigned int whatToDo, int n);
 

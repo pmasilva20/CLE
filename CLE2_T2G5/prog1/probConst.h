@@ -1,7 +1,7 @@
 /**
  *  \file probConst.h
  *
- *  \brief Assignment 2 : Problem 1 - Number of Words
+ *  \brief Assignment 2 : Problem 1 - Number of Words, Number of Words starting with a Vowel and Number of Words ending with a Consonant
  *
  *  Generic Parameters
  *

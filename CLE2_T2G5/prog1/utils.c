@@ -22,6 +22,13 @@
 #include "sharedRegion.h"
 
 
+/**
+ * Send a text chunk
+ * Needs to be sent separatelly due to use of dinamically allocated memory
+ * \param chunk Structure of text chunk to be sent
+ * \param whatToDo Command to be sent
+ * \param n Worker Id to send to
+ */
 void sendChunkText(struct ChunkText chunk, unsigned int whatToDo, int n)
 {
 
@@ -39,10 +46,16 @@ void sendChunkText(struct ChunkText chunk, unsigned int whatToDo, int n)
     //Send filename
     MPI_Send(chunk.filename, filenameCount, MPI_CHAR, n, 0, MPI_COMM_WORLD);
 
-    printf("Dispatcher: Sent chunk to worker %d\n", n);
 }
 
-int makeChunks(FILE *pFile, char *filename, int fileId, int workerNumber, int threadID)
+/**
+ * Process a file into various text chunks, store them in Shared Region
+ * \param pFile Pointer to file to be processed
+ * \param filename Pointer to char array with filename
+ * \param fileId id of file processed
+ * \return Number of chunks made
+ */
+int makeChunks(FILE *pFile, char *filename, int fileId)
 {
     int lastWorker = 1;
 
@@ -153,9 +166,13 @@ int makeChunks(FILE *pFile, char *filename, int fileId, int workerNumber, int th
 }
 
 
+/**
+ * Process a text chunk
+ * \param chunk Structure of a text chunk
+ * \return Structure of Partial File Results with metrics obtained for the chunk processed
+ */
 struct ChunkResults processChunk(struct ChunkText chunk)
 {
-    //printf("Starting up process\n");
     /** Results Variables */
     int nWords = 0;
     int nVowelStartWords = 0;
@@ -203,7 +220,6 @@ struct ChunkResults processChunk(struct ChunkText chunk)
         }
     }
 
-    //printf("Finishing processing\n");
     struct ChunkResults results;
     results.filename = chunk.filename;
     results.fileId = chunk.fileId;

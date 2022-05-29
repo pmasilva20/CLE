@@ -1,7 +1,7 @@
 /**
  *  \file prob1_processing.c
  *
- *  \brief Assignment 1 : Problem 1 - Number of Words, Number of Words starting with a Vowel and Number of Words ending with a Consonant
+ *  \brief Assignment 2 : Problem 1 - Number of Words, Number of Words starting with a Vowel and Number of Words ending with a Consonant
  *
  *  Functions used for Problem 1
  *

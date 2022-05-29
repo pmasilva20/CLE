@@ -1,16 +1,16 @@
 /**
  *  \file main.c
  *
- *  \brief Assignment 2 : Problem 1 -
+ *  \brief Assignment 2 : Problem 1 -- Number of Words, Number of Words starting with a Vowel and Number of Words ending with a Consonant
  *
  *  Description
  *  MPI implementation.
  *
  *
  *  Usage:
- *      \li mpicc -Wall -o main main.c structures.h  utils.c utils.h
- *      \li mpiexec -n <number_processes> ./main <file_name>
- *      \li Example: mpiexec -n 5 ./main mat128_32.bin
+ *      \li mpicc -Wall main.c structures.h probConst.h utils.c utils.h sharedRegion.c sharedRegion.h prob1_processing.h prob1_processing.c -o prob1 -lpthread -lm
+ *      \li mpiexec -n <number_processes> ./prob1 <file_name1> <file_name2> ...
+ *      \li Example: mpiexec -n 4 ./prob1 text0.txt text1.txt text2.txt text3.txt text4.txt 
  *
  *  \author João Soares (93078) & Pedro Silva (93011)
  */
@@ -44,16 +44,20 @@ int totProc;
 /** \brief Threads return status array */
 int *statusDispatcherThreads;
 
+/** \brief Number of files to process */
 int totalFiles;
 
+/** \brief Number of chunks made by Thread Read Files */
 int totalChunksMade = 0;
 
+/** \brief Copy of filenames provided in argc */
 char** fileNames;
 
-struct FileText* all_files_info;
+/** \brief Array of structs with results for each file processed */
+struct FileText* allFilesInfo;
 
+/** \brief Boolean flag for when all files have been processed into chunks and put in Shared Region */
 bool madeAllChunks = false;
-
 
 
 /** \brief Thread Read Files of the File life cycle routine */
@@ -105,7 +109,7 @@ int main(int argc, char *argv[])
     }
 
 
-    /* Check if more than 2 processes Dispatcher and one Worker exist*/
+    /* Check if more than 2 processes a Dispatcher and one Worker exist*/
     if (totProc < 2)
     {
         printf("Requires at least two processes - one worker.\n");
@@ -147,23 +151,22 @@ int main(int argc, char *argv[])
             return EXIT_FAILURE;
         }
 
-        /** All file results Structures **/
+        /** Allocate statically enough file results structures for all files to be read **/
         totalFiles = argc - 1;
         struct FileText buffer[totalFiles];
-        all_files_info = &buffer;
+        allFilesInfo = &buffer;
         fileNames = argv;
 
 
-        /** Initialization FileText*/
+        /** Intialize each file results strcuture */
         for(int i = 0; i < totalFiles; i++){
-            all_files_info[i].fileId = i;
-            all_files_info[i].name = argv[i+1];
-            all_files_info[i].nConsonantEndWord = 0;
-            all_files_info[i].nVowelStartWords = 0;
-            all_files_info[i].nWords = 0;
+            allFilesInfo[i].fileId = i;
+            allFilesInfo[i].name = argv[i+1];
+            allFilesInfo[i].nConsonantEndWord = 0;
+            allFilesInfo[i].nVowelStartWords = 0;
+            allFilesInfo[i].nWords = 0;
         }
 
-        //Thread creation
         /** Generation of Thread to Read and Save Text Chunks of a File **/
         if (pthread_create(&tIdThreads[0], NULL, readFileChunks, &threadsDispatcher[0]) !=0){
             perror("error on creating thread worker");
@@ -182,8 +185,6 @@ int main(int argc, char *argv[])
             printf("Thread Send Chunks Receive Partial Results Created!\n");
         }
 
-
-
         /** Waiting for the termination of the Dispatcher Threads */
         for (int i = 0; i < 2; i++)
         { if (pthread_join (tIdThreads[i], (void *) &status_p) != 0)
@@ -197,13 +198,16 @@ int main(int argc, char *argv[])
             }
         }
 
+        /** Free any memory used to store chunks **/
+        freeChunks();
+
 
         /** End of measurement */
         clock_gettime(CLOCK_MONOTONIC_RAW, &finish);
 
         /** Print Final Results */
         for(int i = 1; i < argc; i++){
-            printResults(all_files_info[i-1]);
+            printResults(allFilesInfo[i-1]);
         }
 
         /** Print Elapsed Time */
@@ -221,25 +225,21 @@ int main(int argc, char *argv[])
         /** Chunk Value */
         struct ChunkText val;
 
-        int count = 0;
-
-
-
         while (true)
         {
-            printf("Worker %d alive %d\n",rank,count);
 
             /** Receive indication of existance of work or not */
             MPI_Recv(&whatToDo, 1, MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-            printf("Worker %d receive what to do\n", rank);
             /** If no more work, worker terminates */
             if (whatToDo == NOMOREWORK)
             {
                 break;
             }
 
-            
+            /** Receive text chunk structure with dinamically allocated chunks array and filename
+             * Requires malloc of buffers before hand, requires various Sends and Receives **/
+
             int fileNameCount;
             int chunkCount;
             int fileId;
@@ -248,7 +248,6 @@ int main(int argc, char *argv[])
 
 
             //Receive size filename
-            printf("Worker %d in receive lane\n", rank);
             MPI_Recv(&fileNameCount, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             //Receive fileId
             MPI_Recv(&fileId, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -268,17 +267,13 @@ int main(int argc, char *argv[])
             val.fileId = fileId;
             val.filename = filenameReceived;
             
-            //printf("Worker %d receive chunk\n", rank);
-            /** Results of chunking to be sent */
+            /** Process a chunk and get metrics */
             struct ChunkResults results = processChunk(val);
-            //printf("Worker %d processed chunk\n",rank);
 
-            /** Send Partial Result for File **/
+            /** Send Partial Results for a File to Thread Send Chunks and Receive Results**/
             MPI_Send(&results, sizeof(struct ChunkResults), MPI_BYTE, 0, 0, MPI_COMM_WORLD);
-            printf("Worker %u processed chunk for File %u\n", rank, results.fileId);
-            count++;
         }
-        printf("Worker %d end\n", rank);
+        printf("Worker %d has ended\n", rank);
     }
 
     MPI_Finalize();
@@ -286,7 +281,11 @@ int main(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-
+/**
+ * \brief Function Read Files and make Chunks
+ * Each Chunks is stored in Shared Region
+ * \param par pointer to application defined worker identification
+ */
 static void *readFileChunks (void *par){
 
     /* Pointer to the text stream associated with the file name */
@@ -309,24 +308,27 @@ static void *readFileChunks (void *par){
             exit(EXIT_FAILURE);
         }
 
-        // Makes chunks and put in SR
-        printf("Dispatcher: entering make chunks\n");
-        int totalChunks = makeChunks(f, filename, i, totProc);
+        // Makes chunks and put in Shared Region
+        int totalChunks = makeChunks(f, filename, i);
 
         totalChunksMade += totalChunks;
 
         /** Close File */
         fclose(f);
     }
+    //Flag that all files have been processed into chunks
     madeAllChunks = true;
-    printf("Dispatcher: All chunks made and put in SR\n");
 
     printf("Thread readFileChunks has finished\n");
     statusDispatcherThreads[id] = EXIT_SUCCESS;
     pthread_exit (&statusDispatcherThreads[id]);
 }
 
-//Pool for Chunks and send them to workers
+/**
+ * \brief Function Send Chunks and Receive Results
+ * Pools for Chunks in Shared Region, sends them to workers to be processed, receives partial results
+ * \param par pointer to application defined worker identification
+ */
 static void *sendChunksReceiveResults (void *par){
      /** Thread ID */
     unsigned int id = *((unsigned int *) par);
@@ -337,29 +339,11 @@ static void *sendChunksReceiveResults (void *par){
     /** Variable to command if there is work to do or not  */
     unsigned int whatToDo;
 
-    /** Variables used to verify if the non-blocking operation are complete*/     
-    bool allMsgRec, recVal, msgRec[totProc];
-
-    int count1 = 0;
-    int count2 = 0;
-    int count3 = 0;
     int lastWorker=1;
     
-    /** MPI_Request handles for the non-blocking operations of sending Matrices and Receive partial Results */
-    //MPI_Request reqSnd[totProc], reqRec[totProc];
-
-    printf("Thread sendChunks getting chunks\n");
-
     while(!madeAllChunks || numberChunksSent < totalChunksMade){
-        /** MPI_Request handler to WhatoDo message */
-        MPI_Request reqWhatoDo;
 
-        /** Last Worker to receive work
-         * It will save the last worker that receives work.
-         * Useful for knowing which workers the dispatcher should expect to receive messages from.
-         * **/
-
-
+        /** Get a Chunk from Shared Region and sent them to workers */
         while(true){
             if (numberChunksSent==totalChunksMade){
                 break;
@@ -372,21 +356,10 @@ static void *sendChunksReceiveResults (void *par){
             /**There is Work to do **/
             whatToDo=WORKTODO;
 
-            if(lastWorker == 1) count1++;
-            if(lastWorker == 2) count2++;
-            if(lastWorker == 3) count3++;
-            if(lastWorker != 1 && lastWorker != 2 && lastWorker != 3){
-                printf("LUCIFER TAKE ME\n");
-            }
-
-            //Send chunk by subdividing structure
-            printf("Counts 1:%d 2:%d 3:%d\n",count1,count2,count3);
-            printf("Chunk Sent by T2 - Chunk %d to Worker %d \n",numberChunksSent,lastWorker);
+            //Send chunk taking into account strcuture used
             sendChunkText(chunk, whatToDo, lastWorker);
 
 
-
-            
             /** Update last Worker that received work*/
             lastWorker = (lastWorker + 1) % totProc;
             if(lastWorker == 0) lastWorker = 1;
@@ -396,29 +369,23 @@ static void *sendChunksReceiveResults (void *par){
         }
     }
 
-    printf("Thread sendChunks getting results\n");
-    //Receive partial Results
-    // For each chunk, go though workers and get result
-
     lastWorker = 1;
     printf("Thread sendChunks dispatcher: trying to receive chunk results for %d chunks in total\n",numberChunksSent);
+    /** Receive partial results for each file, add them to file results structure */
     for (int i = 0; i < numberChunksSent; i++)
     {
         struct ChunkResults chunkResultsReceived;
 
-        printf("Dispatcher stillAlive %d\n",i);
         MPI_Recv(&chunkResultsReceived, sizeof(struct ChunkResults), MPI_BYTE, lastWorker, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
         lastWorker = (lastWorker + 1) % totProc;
         if(lastWorker == 0) lastWorker = 1;
 
-        /** Fill in struct for file **/
-        struct FileText *file_info = &all_files_info[chunkResultsReceived.fileId];
+        struct FileText *file_info = &allFilesInfo[chunkResultsReceived.fileId];
         file_info->nConsonantEndWord += chunkResultsReceived.nConsonantEndWord;
         file_info->nVowelStartWords += chunkResultsReceived.nVowelStartWords;
         file_info->nWords += chunkResultsReceived.nWords;
 
-        //printf("Dispatcher %u : File %u Partial result from worker %d\n", rank, chunkResultsReceived.fileId, lastWorker);
     }
     printf("Dispatcher %u : Got all results\n", rank);
 
