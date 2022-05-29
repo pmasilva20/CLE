@@ -122,8 +122,8 @@ int main (int argc, char *argv[]) {
              whatToDo = NOMOREWORK;
              for (int n = 1; n < totProc; n++)
                MPI_Send (&whatToDo, 1, MPI_UNSIGNED, n, 0, MPI_COMM_WORLD);
-            MPI_Finalize ();
-            return EXIT_FAILURE;
+             MPI_Finalize ();
+             return EXIT_FAILURE;
            }
 
         if ((file_info.pFile = fopen (argv[1], "r")) == NULL)
