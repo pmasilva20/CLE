@@ -57,7 +57,6 @@ void sendChunkText(struct ChunkText chunk, unsigned int whatToDo, int n)
  */
 int makeChunks(FILE *pFile, char *filename, int fileId)
 {
-    int lastWorker = 1;
 
     /** Chunk variable being made*/
     struct ChunkText chunk;

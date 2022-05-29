@@ -131,8 +131,6 @@ int main(int argc, char *argv[])
         /* Counting variable */
         unsigned int n;
 
-        /* Counting variable */
-        unsigned int r;
 
         printf("Number of Worker: %d \n", totProc - 1);
 
@@ -154,7 +152,7 @@ int main(int argc, char *argv[])
         /** Allocate statically enough file results structures for all files to be read **/
         totalFiles = argc - 1;
         struct FileText buffer[totalFiles];
-        allFilesInfo = &buffer;
+        allFilesInfo = (struct FileText *)&buffer;
         fileNames = argv;
 
 

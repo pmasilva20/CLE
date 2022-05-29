@@ -24,10 +24,8 @@
 #include "probConst.h"
 
 
-/** \brief producer threads return status array */
-extern int statusProd = 0;
 
-/** \brief consumer threads return status array */
+/** \brief dispatcher threads return status array */
 extern int *statusDispatcherThreads;
 
 /** \brief Chunks storage region */
@@ -101,7 +99,7 @@ bool getChunks(struct ChunkText* chunk, unsigned int consId) {
         errno = statusDispatcherThreads[consId];                                                            /* save error in errno */
         perror ("error on entering monitor(CF)");
         statusDispatcherThreads[consId] = EXIT_FAILURE;
-        pthread_exit (statusDispatcherThreads[consId]);
+        pthread_exit (&statusDispatcherThreads[consId]);
     }
 
     pthread_once (&init, initialization);
@@ -116,7 +114,7 @@ bool getChunks(struct ChunkText* chunk, unsigned int consId) {
                 errno = statusDispatcherThreads[consId];                                                            /* save error in errno */
                 perror ("error on exiting monitor(CF)");
                 statusDispatcherThreads[consId] = EXIT_FAILURE;
-                pthread_exit (statusDispatcherThreads[consId]);
+                pthread_exit (&statusDispatcherThreads[consId]);
             }
             return false;
         }
