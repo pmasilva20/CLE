@@ -1,7 +1,7 @@
 /**
  *  \file structures.h
  *
- *  \brief Assignment 1 : Problem 2 - Determinant of a Square Matrix
+ *  \brief Assignment 2 : Problem 2 - Determinant of a Square Matrix
  *
  *  Definition of Structures
  *
@@ -21,6 +21,7 @@ struct MatrixResult{
 /** Structure of File */
 struct FileMatrices{
     int id;
+    FILE *pFile;
     char name[40];
     int numberOfMatrices;
     int orderOfMatrices;
