@@ -1,4 +1,4 @@
-APPS=new_version
+APPS=new_version other_version
 
 all: ${APPS}
 
