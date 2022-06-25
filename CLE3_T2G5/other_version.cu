@@ -19,6 +19,7 @@
 #include "common.h"
 #include <stdio.h>
 #include <cuda_runtime.h>
+#include "structures.h"
 
 /**
  * \brief Function Calculate Determinant CPU calculates the determinant
@@ -142,40 +143,70 @@ int main(int argc, char **argv) {
 
     /* set up the device */
     int dev = 0;
-    
+
     cudaDeviceProp deviceProp;
     CHECK(cudaGetDeviceProperties(&deviceProp, dev));
     printf("Using Device %d: %s\n", dev, deviceProp.name);
     CHECK(cudaSetDevice(dev));
 
 
-    FILE *fp = fopen("./mat128_256.bin", "rb");
-    
-    // number of matrices
-    int m;
-    if (!fread(&m, 4, 1, fp)) {
-      exit(1);
+    /** Initialization FileMatrices*/
+    struct FileMatrices file_info;
+
+    //if not enought arguments given
+    if (argc != 2)
+      { printf ("No file name!\n");
+        return EXIT_FAILURE;
+      }
+
+    //Code related to reading a file
+    if ((file_info.pFile = fopen (argv[1], "r")) == NULL)
+    { 
+      perror ("error on file opening for reading");
+      exit (EXIT_FAILURE);
     }
 
-    // order of the matrix
-    int n;
-    if (!fread(&n, 4, 1, fp)) {
-      exit(1);
+
+    
+    // Num of matrices
+    if (fread(&file_info.numberOfMatrices, sizeof(int), 1, file_info.pFile)==0){
+        printf ("Main: Error reading Number of Matrices\n");
+    }
+
+
+    // Order of matrix
+    if (fread(&file_info.orderOfMatrices, sizeof(int), 1, file_info.pFile)==0){
+        printf("Main: Error reading Order of Matrices\n");
     }
     
-    int size = n * n * m;
-    // stores all the matrices of the file in memory
-    double *matrices = (double *) malloc(sizeof(double) * size);
-    double *results = (double *) malloc(sizeof(double) * m);
+    int size = file_info.numberOfMatrices * file_info.numberOfMatrices * file_info.orderOfMatrices;
+    
+    printf("\nFile %u - Number of Matrices to be read  = %d\n", file_info.id, file_info.numberOfMatrices);
+
+    printf("File %u - Order of Matrices to be read  = %d\n", file_info.id, file_info.orderOfMatrices);
+
+
+    /** Set File Properties */
+    strcpy(file_info.name, argv[1]);
+
+    printf("File name %s\n",file_info.name);
+
+
+    //Allocate memory for all matrices and results, GPU and CPU
+    file_info.matrices = (double *) malloc(sizeof(double) * size);
+    file_info.results = (double *) malloc(sizeof(double) * file_info.numberOfMatrices);
     double *matrices_cpu = (double *) malloc(sizeof(double) * size);
-    double *results_cpu = (double *) malloc(sizeof(double) * m);
+    double *results_cpu = (double *) malloc(sizeof(double) * file_info.numberOfMatrices);
 
-    // read all matrices and store them in memory 
-    if (!fread(matrices, 8, size, fp)) {
-          exit(1);
+
+
+    // Read all matrices
+    if (fread(file_info.matrices, sizeof(double), size, file_info.pFile) == 0) {
+        perror("Main: Error reading Matrix\n");
     }
-    // copy matrices for CPU calculations
-    memcpy(matrices_cpu, matrices, size * 8);
+
+    // Copy matrices for CPU calculations
+    memcpy(matrices_cpu, file_info.matrices, size * 8);
 
     // create variables to store the matrices and the results for the GPU
     double *d_matrices;
@@ -183,11 +214,11 @@ int main(int argc, char **argv) {
 
     // store the matrices in the GPU
     CHECK(cudaMalloc((void **)&d_matrices, size * sizeof(double)));		// 1d array with all the matrices
-    CHECK(cudaMalloc((void **)&d_results, m * sizeof(double)));			// 1d array with the results for every matrix
+    CHECK(cudaMalloc((void **)&d_results, file_info.numberOfMatrices * sizeof(double)));			// 1d array with the results for every matrix
 
 
     // fill the matrices
-    CHECK(cudaMemcpy(d_matrices, matrices, size * sizeof(double), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(d_matrices, file_info.matrices, size * sizeof(double), cudaMemcpyHostToDevice));
 
 
     // add matrix at host side for result checks
@@ -195,24 +226,24 @@ int main(int argc, char **argv) {
    
 
     dim3 grid, block;
-    grid.x = m;
-    block.x = n;
+    grid.x = file_info.numberOfMatrices;
+    block.x = file_info.orderOfMatrices;
 
     calcDeterminantCollumns<<<grid, block>>>(d_matrices, d_results);
     CHECK(cudaDeviceSynchronize()); 			// wait for kernel to finish
     double iElaps = seconds() - iStart;
 
-    CHECK(cudaMemcpy(results, d_results, m * sizeof(double), cudaMemcpyDeviceToHost));
+    CHECK(cudaMemcpy(file_info.results, d_results, file_info.numberOfMatrices * sizeof(double), cudaMemcpyDeviceToHost));
     CHECK(cudaFree(d_matrices)); 			// clear matrices in the GPU
     CHECK(cudaFree(d_results));        			// clear results in the GPU
 
 
     //calculate on the CPU
-    calcDeterminantCPU(matrices_cpu, results_cpu, n, m);
+    calcDeterminantCPU(matrices_cpu, results_cpu, file_info.orderOfMatrices, file_info.numberOfMatrices);
     
     CHECK(cudaDeviceReset());
-    for (int i = 0; i < m; i++) {
-	    printf("Matrix %i determinant %+5.3e\n", i, results[i]);
+    for (int i = 0; i < file_info.numberOfMatrices; i++) {
+	    printf("Matrix %i determinant %+5.3e\n", i, file_info.results[i]);
       printf("Matrix cpu %i determinant %+5.3e\n", i, results_cpu[i]);
     }
     printf("cenas elapsed %f sec\n", iElaps);

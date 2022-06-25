@@ -25,7 +25,8 @@ struct FileMatrices{
     char name[40];
     int numberOfMatrices;
     int orderOfMatrices;
-    struct MatrixResult *determinant_result;
+    double *matrices;
+    double *results;
 };
 
 /** Structure of Matrix to process */
