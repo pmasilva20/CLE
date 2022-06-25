@@ -35,59 +35,98 @@ static double get_delta_time(void);
 
 int main (int argc, char **argv)
 {
-  printf("%s Starting...\n", argv[0]);
-  if (sizeof (unsigned int) != (size_t) 4)
-     return 1;                                             // it fails with prejudice if an integer does not have 4 bytes
+  //printf("%s Starting...\n", argv[0]);
+  //if (sizeof (unsigned int) != (size_t) 4)
+     //return 1;                                             // it fails with prejudice if an integer does not have 4 bytes
 
-  /* set up the device */
-
+  
+  /* Set up the device */
   int dev = 0;
+
+  
+  /* File Reader */
+  FILE *pFile;
+  
+  /** Number of Matrice **/
+  int numberOfMatrices;
+  
+  /** Order of Matrices **/
+  int orderOfMatrices;
+
 
   cudaDeviceProp deviceProp;
   CHECK (cudaGetDeviceProperties (&deviceProp, dev));
   printf("Using Device %d: %s\n", dev, deviceProp.name);
   CHECK (cudaSetDevice (dev));
 
-  /* create memory areas in host and device memory where the disk sectors data and sector numbers will be stored */
+  /** Try to Read Matrix File **/
+  if (argc != 2){ 
+    printf ("No file name!\n");
+    return EXIT_FAILURE;
+  }
+ 
+  if ((pFile = fopen (argv[1], "r")) == NULL){ 
+    perror ("error on file opening for reading");
+    exit (EXIT_FAILURE);
+  }
 
-  size_t sector_data_size;
-  size_t sector_number_size;
-  unsigned int *host_sector_data, *host_sector_number;
-  unsigned int *device_sector_data, *device_sector_number;
+  /** Obtain Number of Matrices in File **/
+  if (fread(&numberOfMatrices, sizeof(int), 1, pFile)==0){
+      printf ("Main: Error reading Number of Matrices\n");
+  }
 
-  sector_data_size = (size_t) N_SECTORS * (size_t) SECTOR_SIZE;
-  sector_number_size = (size_t) N_SECTORS * sizeof (unsigned int);
-  if ((sector_data_size + sector_number_size) > (size_t) 5e9)
-     { fprintf (stderr,"The GeForce GTX 1660 Ti cannot handle more than 5GB of memory!\n");
-       exit (1);
-     }
-  printf ("Total sector data size: %lu\n", sector_data_size);
-  printf ("Total sector numbers data size: %lu\n", sector_number_size);
+  /** Obtain Order of the Matrices in File **/ 
+  if (fread(&orderOfMatrices, sizeof(int), 1, pFile)==0){
+      printf("Main: Error reading Order of Matrices\n");
+  }
 
-  host_sector_data = (unsigned int *) malloc (sector_data_size);
-  host_sector_number = (unsigned int *) malloc (sector_number_size);
-  CHECK (cudaMalloc ((void **) &device_sector_data, sector_data_size));
-  CHECK (cudaMalloc ((void **) &device_sector_number, sector_number_size));
+  printf("\nFile - Number of Matrices to be read  = %d\n", numberOfMatrices);
 
-  /* initialize the host data */
+  printf("File - Order of Matrices to be read  = %d\n", orderOfMatrices);
 
-  int i;
+
+  /* Create Memory Spaces in host and device memory where the Matrix and Matrix Results will be stored */
+
+  /** Matrices Host **/
+  double *matricesHost = (double *)malloc(sizeof(double) * numberOfMatrices * orderOfMatrices * orderOfMatrices);
+  
+  /** Determinant Results Host **/
+  double *resultsDeterminantHost = (double *)malloc(sizeof(double) * numberOfMatrices);
+
+  /** Matrices Device/GPU **/
+  double *matricesDevice;
+ 
+  /** Determinant Results Device/GPU **/
+  double *resultsDeterminantDevice;
+
+  /** Allocate Matrices Device & Determinant Results in Global Memory **/
+  CHECK(cudaMalloc((void **)&matricesDevice, numberOfMatrices * orderOfMatrices * orderOfMatrices * sizeof(double)));		
+  CHECK(cudaMalloc((void **)&resultsDeterminantDevice, numberOfMatrices * sizeof(double)));
+  
+  //TODO: Depois se necessário alocar order e numero matrices
+
+
+  /* Initialize the Host Data with Matrices of the file */
+
+  /** Number of Matrices Read */
+  int numberMatricesRead=0;
+  
+  (void) get_delta_time ();
+
+  if (!fread(matricesHost, sizeof(double), numberOfMatrices * orderOfMatrices * orderOfMatrices, pFile))
+  {
+    printf("Error: Error reading matrices from file\n");
+    return EXIT_FAILURE;
+  }  
+  printf ("The initialization of Host data took %.3e seconds\n", get_delta_time ());
+
+  /* Copy the host data to the device memory */
 
   (void) get_delta_time ();
-  srand(0xCCE2021);
-  for (i = 0; i < (int) (sector_data_size / (int) sizeof(unsigned int)); i++)
-    host_sector_data[i] = 108584447u * (unsigned int) i; // "pseudo-random" data (faster than using the rand() function)
-  for(i = 0; i < (int) (sector_number_size / (int)sizeof(unsigned int)); i++)
-    host_sector_number[i] = (rand () & 0xFFFF) | ((rand () & 0xFFFF) << 16);
-  printf ("The initialization of host data took %.3e seconds\n", get_delta_time ());
-
-  /* copy the host data to the device memory */
-
-  (void) get_delta_time ();
-  CHECK (cudaMemcpy (device_sector_data, host_sector_data, sector_data_size, cudaMemcpyHostToDevice));
-  CHECK (cudaMemcpy (device_sector_number, host_sector_number, sector_number_size, cudaMemcpyHostToDevice));
-  printf ("The transfer of %ld bytes from the host to the device took %.3e seconds\n",
-          (long) sector_data_size + (long) sector_number_size, get_delta_time ());
+  
+  CHECK(cudaMemcpy(matricesDevice, matricesHost, numberOfMatrices * orderOfMatrices * orderOfMatrices * sizeof(double), cudaMemcpyHostToDevice));
+  
+  printf ("The transfer of Matrices from the host to the device took %.3e seconds\n", get_delta_time ());
 
   /* run the computational kernel
      as an example, N_SECTORS threads are launched where each thread deals with one sector */
@@ -160,7 +199,7 @@ int main (int argc, char **argv)
   free (host_sector_number);
   free (modified_device_sector_data);
 
-  return 0;
+  return 0; 
 }
 
 static void modify_sector_cpu_kernel (unsigned int *sector_data, unsigned int sector_number, unsigned int n_sectors,
