@@ -1,6 +1,20 @@
 /**
- *   
- */
+ *  \file mainRows.cU 
+ *
+ *  \brief Assignment 3 : Compute the Value of Determinant by Matrix Rows
+ *
+ *  Processes the Determinant of Square Matrices where the threads in a block thread process successive matrix rows
+ *  The file with the square matrices must be supplied by the user.
+ *  GPU Programming implementation.
+ *
+ * 
+ *  Usage:
+ *      \li make
+ *      \li ./mainRows <file_name>
+ *      \li Example: ./mainRows mat128_32.bin
+ * 
+ *  \author João Soares (93078) & Pedro Silva (93011)
+*/
 
 #include <time.h>
 #include <stdio.h>
@@ -23,26 +37,53 @@
 
 /* Allusion to internal functions */
 
-__global__  static void computeDeterminantByRowsOnGPU(double* d_matrices, double* d_results);
+__global__ static void computeDeterminantByRowsOnGPU(double* d_matrices, double* d_results);
 
-void calcDeterminantCPU(double* matrices_cpu, double* determinant_cpu, int n, int m);
+void computeDeterminantByRowsOnCPU(double* matrices_cpu, double* determinant_cpu, int n, int m);
 
+/**
+ * \brief Get the Delta time 
+ * 
+ * \return double 
+ */
 static double get_delta_time(void);
 
+/**
+ * \brief Print Determinant Results 
+ * 
+ * \param numberOfMatrices Number of Matrices/Results
+ * \param resultsDeterminant Array with Determinant Results
+ */
 void printResults(int numberOfMatrices, double * resultsDeterminant);
 
+
+/**
+ * \brief Compare the Result Determinant pressed obtained from Device and Host
+ * 
+ * @param resultsDeterminantDevice Determinant Results Device
+ * @param resultsDeterminantHost Determinant Results Host
+ * @param numberOfMatrices Number of Matrices/Results
+ */
 void compareResults(double* resultsDeterminantDevice, double* resultsDeterminantHost,int numberOfMatrices);
 
 
 /**
- *   Main program
+ * \brief Main Program
+ *  
+ * Instantiation of the processing configuration.
+ * 
+ * \param argc number of words of the command line
+ * \param argv list of words of the command line
+ * \return status of operation 
  */
 
 int main (int argc, char **argv)
 {
   printf("%s Starting...\n", argv[0]);
+
   if (sizeof (unsigned int) != (size_t) 4)
-     return 1;                                             // it fails with prejudice if an integer does not have 4 bytes
+     // It fails with prejudice if an integer does not have 4 bytes
+     return 1;                                            
 
   
   /* Set up the device */
@@ -132,9 +173,7 @@ int main (int argc, char **argv)
   
   printf ("The transfer of Matrices from the host to the device took %.3e seconds\n", get_delta_time ());
 
-  /* run the computational kernel
-     as an example, N_SECTORS threads are launched where each thread deals with one sector */
-
+  /* Run the computational kernel */
   unsigned int gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ;
   int n_sectors, sector_size;
 
@@ -162,10 +201,13 @@ int main (int argc, char **argv)
   
   computeDeterminantByRowsOnGPU <<<grid, block>>> (matricesDevice,resultsDeterminantDevice);
 
-  CHECK (cudaDeviceSynchronize ());                            // wait for kernel to finish
-  CHECK (cudaGetLastError ());                                 // check for kernel errors
+  /** Wait for Kernel to Finish **/
+  CHECK (cudaDeviceSynchronize ());                            
   
   double deviceTime=get_delta_time();
+
+  /** Check for Kernel Errors */
+  CHECK (cudaGetLastError());                                 
 
   /** Determinant Results from Device/GPU **/
   double *resultsDeterminantFromDevice = (double *)malloc(sizeof(double) * numberOfMatrices);
@@ -186,7 +228,7 @@ int main (int argc, char **argv)
   /* Compute Determinant of Matrizes on CPU */
   (void) get_delta_time ();
   
-  calcDeterminantCPU(matricesHost,resultsDeterminantHost,orderOfMatrices,numberOfMatrices);
+  computeDeterminantByRowsOnCPU(matricesHost,resultsDeterminantHost,orderOfMatrices,numberOfMatrices);
   
   double cpuTime=get_delta_time();
  
@@ -199,12 +241,18 @@ int main (int argc, char **argv)
   printf("The Device CUDA Kernel <<<(%d,%d,%d), (%d,%d,%d)>>> took %.3e seconds to run\n",
          gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ, deviceTime);
   
+  /* Free host memory */
+  free (matricesHost);
+  free (resultsDeterminantHost);
+  free (resultsDeterminantFromDevice);
+
   return 0; 
 }
 
 //TODO: Colocar aqui versão CPU alterar formatar
 //TODO alterar função E Documentação
-void calcDeterminantCPU(double* matrices_cpu, double* determinant_cpu, int n, int m){
+void computeDeterminantByRowsOnCPU(double* matrices_cpu, double* determinant_cpu, int n, int m){
+  
   for(int m_id = 0; m_id < m; m_id++){
     int matrixId = m_id * n * n;
     for(int i = 0; i < n-1; i++){
@@ -224,6 +272,7 @@ void calcDeterminantCPU(double* matrices_cpu, double* determinant_cpu, int n, in
         determinant_cpu[m_id]*= matrices_cpu[matrixId + x*n + x];
     }
   }
+
 }
 
 //TODO alterar função E Documentação
@@ -257,6 +306,12 @@ __global__ void static computeDeterminantByRowsOnGPU(double* matricesDevice, dou
   }
 }
 
+/**
+ * \brief Print Determinant Results 
+ * 
+ * \param numberOfMatrices Number of Matrices/Results
+ * \param resultsDeterminant Array with Determinant Results
+ */
 void printResults(int numberOfMatrices, double *resultsDeterminant){
   for (int a = 0; a < numberOfMatrices; a++) {
       printf("Matrix %d :\n", a + 1);
@@ -264,13 +319,27 @@ void printResults(int numberOfMatrices, double *resultsDeterminant){
   }
 }
 
+/**
+ * \brief Compare the Result Determinant pressed obtained from Device and Host
+ * 
+ * @param resultsDeterminantDevice Determinant Results Device
+ * @param resultsDeterminantHost Determinant Results Host
+ * @param numberOfMatrices Number of Matrices/Results
+ */
 void compareResults(double* resultsDeterminantDevice, double* resultsDeterminantHost,int numberOfMatrices){
 
   bool difference=false;
-  double epsilon = 0.000001;
+
+  char resultDevice[1024];
+
+  char resultHost[1024];
+
   for(int i = 0; i < numberOfMatrices; i++){
-    
-    if(!(fabs(resultsDeterminantDevice[i]-resultsDeterminantHost[i]) < epsilon)){
+
+    snprintf(resultDevice, sizeof(resultDevice), "%.3e",resultsDeterminantDevice[i]);
+    snprintf(resultHost, sizeof(resultHost), "%.3e", resultsDeterminantHost[i]);
+
+    if(strcmp(resultDevice,resultHost)!=0){
       printf("\nResults from Device different compared with Results from Host!\n");
       difference=true;
       break;
@@ -283,8 +352,11 @@ void compareResults(double* resultsDeterminantDevice, double* resultsDeterminant
 
 }
 
-
-
+/**
+ * \brief Get the Delta time 
+ * 
+ * \return double 
+ */
 static double get_delta_time(void)
 {
   static struct timespec t0,t1;
