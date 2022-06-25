@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <stdbool.h>
 #include "common.h"
 #include <cuda_runtime.h>
 
@@ -25,11 +25,17 @@
 
 __global__  static void computeDeterminantByRowsOnGPU(double* d_matrices, double* d_results);
 
+void calcDeterminantCPU(double* matrices_cpu, double* determinant_cpu, int n, int m);
+
 static double get_delta_time(void);
 
 void printResults(int numberOfMatrices, double * resultsDeterminant);
+
+void compareResults(double* resultsDeterminantDevice, double* resultsDeterminantHost,int numberOfMatrices);
+
+
 /**
- *   main program
+ *   Main program
  */
 
 int main (int argc, char **argv)
@@ -41,7 +47,6 @@ int main (int argc, char **argv)
   
   /* Set up the device */
   int dev = 0;
-
   
   /* File Reader */
   FILE *pFile;
@@ -150,13 +155,17 @@ int main (int argc, char **argv)
        return 1;
      }
   **/
+  
+
+  /* Compute Determinant of Matrizes on Device */
   (void) get_delta_time ();
+  
   computeDeterminantByRowsOnGPU <<<grid, block>>> (matricesDevice,resultsDeterminantDevice);
+
   CHECK (cudaDeviceSynchronize ());                            // wait for kernel to finish
   CHECK (cudaGetLastError ());                                 // check for kernel errors
-  printf("The CUDA kernel <<<(%d,%d,%d), (%d,%d,%d)>>> took %.3e seconds to run\n",
-         gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ, get_delta_time ());
-
+  
+  double deviceTime=get_delta_time();
 
   /** Determinant Results from Device/GPU **/
   double *resultsDeterminantFromDevice = (double *)malloc(sizeof(double) * numberOfMatrices);
@@ -174,12 +183,48 @@ int main (int argc, char **argv)
   /* Reset the Device / GPU */
   CHECK (cudaDeviceReset ());
 
+  /* Compute Determinant of Matrizes on CPU */
+  (void) get_delta_time ();
+  
+  calcDeterminantCPU(matricesHost,resultsDeterminantHost,orderOfMatrices,numberOfMatrices);
+  
+  double cpuTime=get_delta_time();
+ 
   printResults(numberOfMatrices,resultsDeterminantFromDevice);
+  
+  /** Compare Determinant Results from Host and Device **/
+  compareResults(resultsDeterminantFromDevice,resultsDeterminantHost,numberOfMatrices);
+
+  printf("\nThe CPU Kernel took %.3e seconds to run\n",cpuTime);
+  printf("The Device CUDA Kernel <<<(%d,%d,%d), (%d,%d,%d)>>> took %.3e seconds to run\n",
+         gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ, deviceTime);
   
   return 0; 
 }
 
-//TODO: Colocar aqui versão CPU
+//TODO: Colocar aqui versão CPU alterar formatar
+//TODO alterar função E Documentação
+void calcDeterminantCPU(double* matrices_cpu, double* determinant_cpu, int n, int m){
+  for(int m_id = 0; m_id < m; m_id++){
+    int matrixId = m_id * n * n;
+    for(int i = 0; i < n-1; i++){
+
+      for(int k = i+1; k < n; k++){
+        double pivot = matrices_cpu[matrixId + i*n + i];
+        double term = matrices_cpu[matrixId + k*n + i] / pivot;
+
+        for(int j=0;j<n;j++){
+          matrices_cpu[matrixId + k*n + j]-= (term * matrices_cpu[matrixId + i*n + j]);
+        }
+      }
+    }
+    determinant_cpu[m_id] = 1;
+    
+    for (int x = 0; x < n; x++){
+        determinant_cpu[m_id]*= matrices_cpu[matrixId + x*n + x];
+    }
+  }
+}
 
 //TODO alterar função E Documentação
 __global__ void static computeDeterminantByRowsOnGPU(double* matricesDevice, double* resultsDeterminantDevice) {
@@ -213,12 +258,32 @@ __global__ void static computeDeterminantByRowsOnGPU(double* matricesDevice, dou
 }
 
 void printResults(int numberOfMatrices, double *resultsDeterminant){
-  
   for (int a = 0; a < numberOfMatrices; a++) {
       printf("Matrix %d :\n", a + 1);
       printf("The determinant is %.3e\n", resultsDeterminant[a]);
   }
 }
+
+void compareResults(double* resultsDeterminantDevice, double* resultsDeterminantHost,int numberOfMatrices){
+
+  bool difference=false;
+  double epsilon = 0.000001;
+  for(int i = 0; i < numberOfMatrices; i++){
+    
+    if(!(fabs(resultsDeterminantDevice[i]-resultsDeterminantHost[i]) < epsilon)){
+      printf("\nResults from Device different compared with Results from Host!\n");
+      difference=true;
+      break;
+    }
+
+  }
+  if(!difference){
+    printf("\nResults from Device equal to Results from Host!\n");
+  }
+
+}
+
+
 
 static double get_delta_time(void)
 {
