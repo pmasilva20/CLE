@@ -24,22 +24,27 @@
 #include "common.h"
 #include <cuda_runtime.h>
 
+
+/* Allusion to Internal Functions */
+
 /**
- *   program configuration
+ * \brief Compute Matrix Determinant on Device/GPU using Gaussian Elimination Row by Row
+ * 
+ * \param matricesDevice Matrices Device
+ * \param resultsDeterminantDevice Determinant Results Device
  */
-
-#ifndef SECTOR_SIZE
-# define SECTOR_SIZE  512
-#endif
-#ifndef N_SECTORS
-# define N_SECTORS    (1 << 21)                            // it can go as high as (1 << 21)
-#endif
-
-/* Allusion to internal functions */
-
 __global__ static void computeDeterminantByRowsOnGPU(double* d_matrices, double* d_results);
 
-void computeDeterminantByRowsOnCPU(double* matrices_cpu, double* determinant_cpu, int n, int m);
+
+/**
+ * \brief Compute Matrix Determinant on CPU using Gaussian Elimination Row by Row
+ * 
+ * \param matricesHost Matrices Host
+ * \param resultsDeterminantHost Determinant Results Host
+ * \param orderOfMatrices Order of the Matrices
+ * \param numberOfMatrices Number of Matrices
+ */
+static void computeDeterminantByRowsOnCPU(double* matrices_cpu, double* determinant_cpu, int n, int m);
 
 /**
  * \brief Get the Delta time 
@@ -85,7 +90,6 @@ int main (int argc, char **argv)
      // It fails with prejudice if an integer does not have 4 bytes
      return 1;                                            
 
-  
   /* Set up the device */
   int dev = 0;
   
@@ -109,7 +113,8 @@ int main (int argc, char **argv)
     printf ("No file name!\n");
     return EXIT_FAILURE;
   }
- 
+  
+  /** Try to Read Matrix File **/
   if ((pFile = fopen (argv[1], "r")) == NULL){ 
     perror ("error on file opening for reading");
     exit (EXIT_FAILURE);
@@ -148,22 +153,19 @@ int main (int argc, char **argv)
   CHECK(cudaMalloc((void **)&matricesDevice, numberOfMatrices * orderOfMatrices * orderOfMatrices * sizeof(double)));		
   CHECK(cudaMalloc((void **)&resultsDeterminantDevice, numberOfMatrices * sizeof(double)));
   
-  //TODO: Depois se necessário alocar order e numero matrices
-
-
-  /* Initialize the Host Data with Matrices of the file */
-
-  /** Number of Matrices Read */
-  int numberMatricesRead=0;
   
   (void) get_delta_time ();
-
+  /* Initialize the Host Data with Matrices of the file */
   if (!fread(matricesHost, sizeof(double), numberOfMatrices * orderOfMatrices * orderOfMatrices, pFile))
   {
     printf("Error: Error reading matrices from file\n");
     return EXIT_FAILURE;
-  }  
-  printf ("The initialization of Host data took %.3e seconds\n", get_delta_time ());
+  }
+    
+  /** Save Time **/
+  double inicializeHostDataTime=get_delta_time();
+
+
 
   /* Copy the host data to the device memory */
 
@@ -171,14 +173,12 @@ int main (int argc, char **argv)
   
   CHECK(cudaMemcpy(matricesDevice, matricesHost, numberOfMatrices * orderOfMatrices * orderOfMatrices * sizeof(double), cudaMemcpyHostToDevice));
   
-  printf ("The transfer of Matrices from the host to the device took %.3e seconds\n", get_delta_time ());
+  /** Save Time **/
+  double copyToDeviceTime=get_delta_time();
 
   /* Run the computational kernel */
   unsigned int gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ;
-  int n_sectors, sector_size;
 
-  n_sectors = N_SECTORS;
-  sector_size = SECTOR_SIZE;
   blockDimX = orderOfMatrices;                             // optimize!
   blockDimY = 1 << 0;                                      // optimize!
   blockDimZ = 1 << 0;                                      // do not change!
@@ -188,13 +188,6 @@ int main (int argc, char **argv)
 
   dim3 grid (gridDimX, gridDimY, gridDimZ);
   dim3 block (blockDimX, blockDimY, blockDimZ);
-
-  /**if ((gridDimX * gridDimY * gridDimZ * blockDimX * blockDimY * blockDimZ) != n_sectors)
-     { printf ("Wrong configuration!\n");
-       return 1;
-     }
-  **/
-  
 
   /* Compute Determinant of Matrizes on Device */
   (void) get_delta_time ();
@@ -214,7 +207,10 @@ int main (int argc, char **argv)
 
   /* Copy kernel result back to host side */
   CHECK(cudaMemcpy(resultsDeterminantFromDevice, resultsDeterminantDevice, numberOfMatrices * sizeof(double), cudaMemcpyDeviceToHost));
-  printf ("The transfer of Determinant Results from the device to the host took %.3e seconds\n", get_delta_time ());
+  
+  /** Save Time **/
+  double transferToHostTime=get_delta_time ();
+
 
   /** Free Matrices from Device/GPU  Global Memory **/
   CHECK (cudaFree (matricesDevice));
@@ -231,17 +227,30 @@ int main (int argc, char **argv)
   computeDeterminantByRowsOnCPU(matricesHost,resultsDeterminantHost,orderOfMatrices,numberOfMatrices);
   
   double cpuTime=get_delta_time();
- 
+  
+
+  /** Print Device Results **/
   printResults(numberOfMatrices,resultsDeterminantFromDevice);
   
+
+  /** Print Other Times **/
+
+  printf ("\nThe initialization of Host data took %.3e seconds\n",inicializeHostDataTime);
+
+  printf ("The transfer of Matrices from the host to the device took %.3e seconds\n", copyToDeviceTime);
+  
+  printf ("The transfer of Determinant Results from the device to the host took %.3e seconds\n", transferToHostTime);
+
   /** Compare Determinant Results from Host and Device **/
   compareResults(resultsDeterminantFromDevice,resultsDeterminantHost,numberOfMatrices);
 
+  /** Print Compution Times */
   printf("\nThe CPU Kernel took %.3e seconds to run\n",cpuTime);
+
   printf("The Device CUDA Kernel <<<(%d,%d,%d), (%d,%d,%d)>>> took %.3e seconds to run\n",
          gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ, deviceTime);
   
-  /* Free host memory */
+  /* Free Host memory */
   free (matricesHost);
   free (resultsDeterminantHost);
   free (resultsDeterminantFromDevice);
@@ -249,59 +258,106 @@ int main (int argc, char **argv)
   return 0; 
 }
 
-//TODO: Colocar aqui versão CPU alterar formatar
-//TODO alterar função E Documentação
-void computeDeterminantByRowsOnCPU(double* matrices_cpu, double* determinant_cpu, int n, int m){
+/**
+ * \brief Compute Matrix Determinant on CPU using Gaussian Elimination Row by Row
+ * 
+ * \param matricesHost Matrices Host
+ * \param resultsDeterminantHost Determinant Results Host
+ * \param orderOfMatrices Order of the Matrices
+ * \param numberOfMatrices Number of Matrices
+ */
+static void computeDeterminantByRowsOnCPU(double* matricesHost, double* resultsDeterminantHost, int orderOfMatrices, int numberOfMatrices){
   
-  for(int m_id = 0; m_id < m; m_id++){
-    int matrixId = m_id * n * n;
-    for(int i = 0; i < n-1; i++){
+  //For Each Matrix
+  for(int idx = 0; idx < numberOfMatrices; idx++){
+    
+    //Obtain Matrix ID
+    int matrixID = idx * orderOfMatrices * orderOfMatrices;
+    
+    //Begin Gauss Elimination By Row
+    for(int i = 0; i < orderOfMatrices-1; i++){
 
-      for(int k = i+1; k < n; k++){
-        double pivot = matrices_cpu[matrixId + i*n + i];
-        double term = matrices_cpu[matrixId + k*n + i] / pivot;
+      for(int k = i+1; k < orderOfMatrices; k++){
 
-        for(int j=0;j<n;j++){
-          matrices_cpu[matrixId + k*n + j]-= (term * matrices_cpu[matrixId + i*n + j]);
+        /** Obtain Pivot **/
+        double pivot = matricesHost[matrixID + i*orderOfMatrices + i];
+
+        /** Obtain Term**/
+        double term = matricesHost[matrixID + i*orderOfMatrices + k] / pivot;
+
+        /** "Elimination" by Row **/
+        for(int j=0;j<orderOfMatrices;j++){
+          matricesHost[matrixID + j*orderOfMatrices + k]-= (term * matricesHost[matrixID + j*orderOfMatrices + i]);
         }
+
       }
     }
-    determinant_cpu[m_id] = 1;
+
+    /** Obtain Matrix Determinant */
+    resultsDeterminantHost[idx] = 1;
     
-    for (int x = 0; x < n; x++){
-        determinant_cpu[m_id]*= matrices_cpu[matrixId + x*n + x];
+    for (int x = 0; x < orderOfMatrices; x++){
+        resultsDeterminantHost[idx]*= matricesHost[matrixID + x*orderOfMatrices + x];
     }
+
   }
 
 }
 
-//TODO alterar função E Documentação
+/**
+ * \brief Compute Matrix Determinant on Device/GPU using Gaussian Elimination Row by Row
+ * 
+ * \param matricesDevice Matrices Device
+ * \param resultsDeterminantDevice Determinant Results Device
+ */
 __global__ void static computeDeterminantByRowsOnGPU(double* matricesDevice, double* resultsDeterminantDevice) {
 	
-  int numberOfMatrices = blockDim.x;
+  /** Obtain Order of Matrices from Block Dimension x **/
+  int orderOfMatrices = blockDim.x;
 	
-  for (int iter = 0; iter < numberOfMatrices; iter++) {
-   
-    if (threadIdx.x < iter) 
-      continue;
+  // TODO:
+  for (int iter = 0; iter < orderOfMatrices; iter++) {
 
-    int matrixId = blockIdx.x * blockDim.x * blockDim.x;
-    int row = matrixId + threadIdx.x * blockDim.x;			// current row offset of this (block thread)	
-    int iterRow = matrixId + iter * blockDim.x;
+   // TODO:
+    if (threadIdx.x < iter){
+       continue;
+    } 
+      
+    /** Obtain Matrix ID of the Block **/
+    int matrixID = blockIdx.x * blockDim.x * blockDim.x;
 
+    /** Obtain Current Row of the Matrix of the Block Thread **/
+    int row = matrixID + threadIdx.x * blockDim.x;
+
+    /** Obtain Current element of the Row **/		
+    int iterRow = matrixID + iter * blockDim.x;
+
+    // TODO:
     if (threadIdx.x == iter) {
-      if (iter == 0)
+
+      // TODO:
+      if (iter == 0){
         resultsDeterminantDevice[blockIdx.x] = 1;
+      }
+      // TODO:
       resultsDeterminantDevice[blockIdx.x] *= matricesDevice[iterRow + iter];
+      
       continue;
     }
 
+    /** Obtain Pivot **/
     double pivot = matricesDevice[iterRow + iter];
 
-    double value = matricesDevice[row + iter] / pivot;
-    for (int i = iter + 1; i < numberOfMatrices; i++) {
-      matricesDevice[row + i] -= matricesDevice[iterRow + i] * value; 
+    /** Obtain Term**/
+    double term = matricesDevice[row + iter] / pivot;
+
+    /** "Elimination" By Row **/
+    for (int i = iter + 1; i < orderOfMatrices; i++) {
+      matricesDevice[row + i] -= matricesDevice[iterRow + i] * term; 
     }
+
+    /** Synchronization point of execution in the Kernel to coordinate acesses to the Matrices by the Block Threads **/
+    /** Exemple: Prevent compution in row 3 without compution in row 2 done **/
     __syncthreads();
   }
 }
