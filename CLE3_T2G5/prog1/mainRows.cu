@@ -1,5 +1,5 @@
 /**
- *  \file mainRows.cU 
+ *  \file mainRows.cu 
  *
  *  \brief Assignment 3 : Compute the Value of Determinant by Matrix Rows
  *
