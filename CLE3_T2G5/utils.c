@@ -56,7 +56,8 @@ double calculateMatrixDeterminant(int orderMatrix,double matrix[orderMatrix][ord
     for(int i=0;i<orderMatrix-1;i++){
         //Begin Gauss Elimination
         for(int k=i+1;k<orderMatrix;k++){
-            double term=matrix[k][i]/matrix[i][i];
+            double pivot = matrix[i][i];
+            double term=matrix[k][i]/pivot;
             for(int j=0;j<orderMatrix;j++){
                 matrix[k][j]=matrix[k][j]-term*matrix[i][j];
             }
