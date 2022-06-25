@@ -28,9 +28,10 @@ static void modify_sector_cpu_kernel (unsigned int *sector_data, unsigned int se
 __global__ static void modify_sector_cuda_kernel (unsigned int * __restrict__ sector_data, unsigned int * __restrict__ sector_number,
                                                   unsigned int n_sectors, unsigned int sector_size);
 
-__global__  static void updateMatrixCols(double* d_matrices, double* d_results);
+__global__  static void updateMatrix(double* d_matrices, double* d_results);
 
 static double get_delta_time(void);
+
 void printResults(int numberOfMatrices, double * resultsDeterminant);
 /**
  *   main program
@@ -155,7 +156,7 @@ int main (int argc, char **argv)
      }
   **/
   (void) get_delta_time ();
-  updateMatrixCols <<<grid, block>>> (matricesDevice,resultsDeterminantDevice);
+  updateMatrix <<<grid, block>>> (matricesDevice,resultsDeterminantDevice);
   CHECK (cudaDeviceSynchronize ());                            // wait for kernel to finish
   CHECK (cudaGetLastError ());                                 // check for kernel errors
   printf("The CUDA kernel <<<(%d,%d,%d), (%d,%d,%d)>>> took %.3e seconds to run\n",
@@ -210,7 +211,7 @@ static void modify_sector_cpu_kernel (unsigned int *sector_data, unsigned int se
 
 //TODO: Colocar aqui versão CPU
 
-__global__  static void updateMatrixCols(double* d_matrices, double* d_results) {
+__global__ void static updateMatrix(double* d_matrices, double* d_results) {
 	int n = blockDim.x;
 	for (int iter = 0; iter < n; iter++) {
    
@@ -218,21 +219,21 @@ __global__  static void updateMatrixCols(double* d_matrices, double* d_results) 
       continue;
 
     int matrixId = blockIdx.x * n * n;
-    int col = matrixId + threadIdx.x;			// current col offset of this (block thread)	
-    int iterCol = matrixId + iter;
+    int row = matrixId + threadIdx.x * n;			// current row offset of this (block thread)	
+    int iterRow = matrixId + iter * n;
 
     if (threadIdx.x == iter) {
       if (iter == 0)
         d_results[blockIdx.x] = 1;
-      d_results[blockIdx.x] *= d_matrices[iterCol + iter * n];
+      d_results[blockIdx.x] *= d_matrices[iterRow + iter];
       continue;
     }
 
-    double pivot = d_matrices[iterCol + iter * n];
+    double pivot = d_matrices[iterRow + iter];
 
-    double value = d_matrices[col + iter * n] / pivot;
+    double value = d_matrices[row + iter] / pivot;
     for (int i = iter + 1; i < n; i++) {
-      d_matrices[col + i * n] -= d_matrices[iterCol + i * n] * value; 
+      d_matrices[row + i] -= d_matrices[iterRow + i] * value; 
     }
     __syncthreads();
   }
@@ -244,4 +245,17 @@ void printResults(int numberOfMatrices, double *resultsDeterminant){
       printf("Matrix %d :\n", a + 1);
       printf("The determinant is %.3e\n", resultsDeterminant[a]);
   }
+}
+
+static double get_delta_time(void)
+{
+  static struct timespec t0,t1;
+
+  t0 = t1;
+  if(clock_gettime(CLOCK_MONOTONIC,&t1) != 0)
+  {
+    perror("clock_gettime");
+    exit(1);
+  }
+  return (double)(t1.tv_sec - t0.tv_sec) + 1.0e-9 * (double)(t1.tv_nsec - t0.tv_nsec);
 }
