@@ -136,7 +136,7 @@ int main (int argc, char **argv)
   printf("File - Order of Matrices to be read  = %d\n", orderOfMatrices);
 
 
-  /* Create Memory Spaces in host and device memory where the Matrix and Matrix Results will be stored */
+  /* Create Memory Spaces in host and device memory where the Matrices and Matrices Results will be stored */
 
   /** Matrices Host **/
   double *matricesHost = (double *)malloc(sizeof(double) * numberOfMatrices * orderOfMatrices * orderOfMatrices);
@@ -318,25 +318,24 @@ static void computeDeterminantByColumnsOnCPU(double* matricesHost, double* resul
 __global__ void static computeDeterminantByColumnsOnGPU(double* matricesDevice, double* resultsDeterminantDevice) {
 
   /** Obtain Order of Matrices from Block Dimension x **/
-	int n = blockDim.x;
+  int orderOfMatrices = blockDim.x;
 	
   //TODO:
-  for (int iter = 0; iter < n; iter++) {
+  for (int iter = 0; iter < orderOfMatrices; iter++) {
 
    // TODO:
     if (threadIdx.x < iter){
       continue;
     } 
       
-
     /** Obtain Matrix ID of the Block **/
-    int matrixId = blockIdx.x * n * n;
+    int matrixID = blockIdx.x * orderOfMatrices * orderOfMatrices;
 
     /** Obtain Current Column of the Matrix of the Block Thread **/
-    int col = matrixId + threadIdx.x;
+    int col = matrixID + threadIdx.x;
 
     /** Obtain Current element of the Column **/		
-    int iterCol = matrixId + iter;
+    int iterCol = matrixID + iter;
 
     // TODO:
     if (threadIdx.x == iter) {
@@ -345,19 +344,19 @@ __global__ void static computeDeterminantByColumnsOnGPU(double* matricesDevice, 
         resultsDeterminantDevice[blockIdx.x] = 1;
       }
       // TODO:  
-      resultsDeterminantDevice[blockIdx.x] *= matricesDevice[iterCol + iter * n];
+      resultsDeterminantDevice[blockIdx.x] *= matricesDevice[iterCol + iter * orderOfMatrices];
       continue;
     }
 
     /** Obtain Pivot **/
-    double pivot = matricesDevice[iterCol + iter * n];
+    double pivot = matricesDevice[iterCol + iter * orderOfMatrices];
 
     /** Obtain Term **/
-    double term = matricesDevice[col + iter * n] / pivot;
+    double term = matricesDevice[col + iter * orderOfMatrices] / pivot;
 
     /** "Elimination" By Column **/
-    for (int i = iter + 1; i < n; i++) {
-      matricesDevice[col + i * n] -= matricesDevice[iterCol + i * n] * term; 
+    for (int i = iter + 1; i < orderOfMatrices; i++) {
+      matricesDevice[col + i * orderOfMatrices] -= matricesDevice[iterCol + i * orderOfMatrices] * term; 
     }
 
     /** Synchronization point of execution in the Kernel to coordinate acesses to the Matrices by the Block Threads **/

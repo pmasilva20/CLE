@@ -135,7 +135,7 @@ int main (int argc, char **argv)
   printf("File - Order of Matrices to be read  = %d\n", orderOfMatrices);
 
 
-  /* Create Memory Spaces in host and device memory where the Matrix and Matrix Results will be stored */
+  /* Create Memory Spaces in host and device memory where the Matrices and Matrices Results will be stored */
 
   /** Matrices Host **/
   double *matricesHost = (double *)malloc(sizeof(double) * numberOfMatrices * orderOfMatrices * orderOfMatrices);
