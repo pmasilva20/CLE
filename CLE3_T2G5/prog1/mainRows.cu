@@ -21,14 +21,9 @@
 # define N_SECTORS    (1 << 21)                            // it can go as high as (1 << 21)
 #endif
 
-/* allusion to internal functions */
+/* Allusion to internal functions */
 
-static void modify_sector_cpu_kernel (unsigned int *sector_data, unsigned int sector_number, unsigned int n_sectors,
-                                      unsigned int sector_size);
-__global__ static void modify_sector_cuda_kernel (unsigned int * __restrict__ sector_data, unsigned int * __restrict__ sector_number,
-                                                  unsigned int n_sectors, unsigned int sector_size);
-
-__global__  static void updateMatrix(double* d_matrices, double* d_results);
+__global__  static void computeDeterminantByRowsOnGPU(double* d_matrices, double* d_results);
 
 static double get_delta_time(void);
 
@@ -39,9 +34,9 @@ void printResults(int numberOfMatrices, double * resultsDeterminant);
 
 int main (int argc, char **argv)
 {
-  //printf("%s Starting...\n", argv[0]);
-  //if (sizeof (unsigned int) != (size_t) 4)
-     //return 1;                                             // it fails with prejudice if an integer does not have 4 bytes
+  printf("%s Starting...\n", argv[0]);
+  if (sizeof (unsigned int) != (size_t) 4)
+     return 1;                                             // it fails with prejudice if an integer does not have 4 bytes
 
   
   /* Set up the device */
@@ -156,17 +151,17 @@ int main (int argc, char **argv)
      }
   **/
   (void) get_delta_time ();
-  updateMatrix <<<grid, block>>> (matricesDevice,resultsDeterminantDevice);
+  computeDeterminantByRowsOnGPU <<<grid, block>>> (matricesDevice,resultsDeterminantDevice);
   CHECK (cudaDeviceSynchronize ());                            // wait for kernel to finish
   CHECK (cudaGetLastError ());                                 // check for kernel errors
   printf("The CUDA kernel <<<(%d,%d,%d), (%d,%d,%d)>>> took %.3e seconds to run\n",
          gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ, get_delta_time ());
 
-  /* Copy kernel result back to host side */
 
   /** Determinant Results from Device/GPU **/
   double *resultsDeterminantFromDevice = (double *)malloc(sizeof(double) * numberOfMatrices);
 
+  /* Copy kernel result back to host side */
   CHECK(cudaMemcpy(resultsDeterminantFromDevice, resultsDeterminantDevice, numberOfMatrices * sizeof(double), cudaMemcpyDeviceToHost));
   printf ("The transfer of Determinant Results from the device to the host took %.3e seconds\n", get_delta_time ());
 
@@ -184,56 +179,34 @@ int main (int argc, char **argv)
   return 0; 
 }
 
-static void modify_sector_cpu_kernel (unsigned int *sector_data, unsigned int sector_number, unsigned int n_sectors,
-                                      unsigned int sector_size)
-{
-  unsigned int x, i, a, c, n_words;
-
-  /* convert the sector size into number of 4-byte words (it is assumed that sizeof(unsigned int) = 4) */
-
-  n_words = sector_size / 4u;
-
-  /* initialize the linear congruencial pseudo-random number generator
-     (section 3.2.1.2 of The Art of Computer Programming presents the theory behind the restrictions on a and c) */
-
-  i = sector_number;                                       // get the sector number
-  a = 0xCCE00001u ^ ((i & 0x0F0F0F0Fu) << 2);              // a must be a multiple of 4 plus 1
-  c = 0x00CCE001u ^ ((i & 0xF0F0F0F0u) >> 3);              // c must be odd
-  x = 0xCCE02021u;                                         // initial state
-
-  /* modify the sector data */
-
-  for (i = 0u; i < n_words; i++)
-  { x = a * x + c;                                         // update the pseudo-random generator state
-    sector_data[i] ^= x;                                   // modify the sector data
-  }
-}
-
 //TODO: Colocar aqui versão CPU
 
-__global__ void static updateMatrix(double* d_matrices, double* d_results) {
-	int n = blockDim.x;
-	for (int iter = 0; iter < n; iter++) {
+//TODO alterar função E Documentação
+__global__ void static computeDeterminantByRowsOnGPU(double* matricesDevice, double* resultsDeterminantDevice) {
+	
+  int numberOfMatrices = blockDim.x;
+	
+  for (int iter = 0; iter < numberOfMatrices; iter++) {
    
     if (threadIdx.x < iter) 
       continue;
 
-    int matrixId = blockIdx.x * n * n;
-    int row = matrixId + threadIdx.x * n;			// current row offset of this (block thread)	
-    int iterRow = matrixId + iter * n;
+    int matrixId = blockIdx.x * blockDim.x * blockDim.x;
+    int row = matrixId + threadIdx.x * blockDim.x;			// current row offset of this (block thread)	
+    int iterRow = matrixId + iter * blockDim.x;
 
     if (threadIdx.x == iter) {
       if (iter == 0)
-        d_results[blockIdx.x] = 1;
-      d_results[blockIdx.x] *= d_matrices[iterRow + iter];
+        resultsDeterminantDevice[blockIdx.x] = 1;
+      resultsDeterminantDevice[blockIdx.x] *= matricesDevice[iterRow + iter];
       continue;
     }
 
-    double pivot = d_matrices[iterRow + iter];
+    double pivot = matricesDevice[iterRow + iter];
 
-    double value = d_matrices[row + iter] / pivot;
-    for (int i = iter + 1; i < n; i++) {
-      d_matrices[row + i] -= d_matrices[iterRow + i] * value; 
+    double value = matricesDevice[row + iter] / pivot;
+    for (int i = iter + 1; i < numberOfMatrices; i++) {
+      matricesDevice[row + i] -= matricesDevice[iterRow + i] * value; 
     }
     __syncthreads();
   }
