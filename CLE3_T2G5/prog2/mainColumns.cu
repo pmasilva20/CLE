@@ -327,13 +327,13 @@ __global__ void static computeDeterminantByColumnsOnGPU(double* matricesDevice, 
   /** Column being Iterated */
   int columnIterating;
 
-  /** Access/Obtain Column of the Matrix correspondent of the Block Thread**/
+  /** Access/Obtain Column of the Matrix correspondent of the Thread within the Block **/
   int columnBlockThreadID = matrixID + threadIdx.x;
 	
   /** For the columns of the Matrix to Iterate **/
   for (columnIterating = 0; columnIterating < orderOfMatrices; columnIterating++) {
 
-    /** If column being being iterated is "before" the column correspondent of the Block Thread then skip this column **/
+    /** If column being being iterated is "before" the column correspondent of the Thread then skip this column **/
     if (threadIdx.x < columnIterating){
       /** Skip Current Interaction **/
       continue;
@@ -342,7 +342,7 @@ __global__ void static computeDeterminantByColumnsOnGPU(double* matricesDevice, 
     /** Access/Obtain column being iterated of the Matrix **/		
     int columnIteratingID = matrixID + columnIterating;
 
-    /* If column being iterated correspondes to the column of the Block Thread */
+    /* If column being iterated correspondes to the column of the Thread */
     if (threadIdx.x == columnIterating) {
       
       /* If column being Iterated is the first one of the Matrix, inicialize the Matrix Determinant Result in Results Determinant Device  */
@@ -368,7 +368,7 @@ __global__ void static computeDeterminantByColumnsOnGPU(double* matricesDevice, 
       matricesDevice[columnBlockThreadID + i * orderOfMatrices] -= matricesDevice[columnIteratingID + i * orderOfMatrices] * term; 
     }
 
-    /** Synchronization point of execution in the Kernel to coordinate acesses to the Matrices by the Block Threads **/
+    /** Synchronization point of execution in the Kernel to coordinate acesses to the Matrices by the Threads within the Block **/
     /** Exemple: Prevent compution in column 3 without compution in column 2 done **/
     __syncthreads();
   

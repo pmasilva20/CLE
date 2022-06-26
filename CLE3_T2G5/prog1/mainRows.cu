@@ -322,13 +322,13 @@ __global__ void static computeDeterminantByRowsOnGPU(double* matricesDevice, dou
   /** Access/Obtain Matrix ID of the Block from Matrices Device **/
   int matrixID = blockIdx.x * blockDim.x * blockDim.x;
 
-  /** Access/Obtain Row of the Matrix correspondent of the Block Thread **/
+  /** Access/Obtain Row of the Matrix correspondent of the Thread within the Block **/
   int rowBlockThreadID = matrixID + threadIdx.x * blockDim.x;
 
   /** For the Rows of the Matrix to Iterate **/
   for (rowIterating = 0; rowIterating < orderOfMatrices; rowIterating++) {
 
-   /** If row being being iterated is "above" the Row correspondent of the Block Thread then skip this Row **/
+   /** If row being being iterated is "above" the Row correspondent of the Thread then skip this Row **/
     if (threadIdx.x < rowIterating){
       /** Skip Current Interaction **/
        continue;
@@ -337,7 +337,7 @@ __global__ void static computeDeterminantByRowsOnGPU(double* matricesDevice, dou
     /** Access/Obtain Row being iterated of the Matrix **/		
     int rowIteratingID = matrixID + rowIterating * blockDim.x;
 
-    /* If row being iterated correspondes to the row of the Block Thread */
+    /* If row being iterated correspondes to the row of the Thread */
     if (threadIdx.x == rowIterating) {
 
       /* If row being Iterated is the first one of the Matrix, inicialize the Matrix Determinant Result in Results Determinant Device  */
@@ -363,7 +363,7 @@ __global__ void static computeDeterminantByRowsOnGPU(double* matricesDevice, dou
       matricesDevice[rowBlockThreadID + i] -= matricesDevice[rowIteratingID + i] * term; 
     }
 
-    /** Synchronization point of execution in the Kernel to coordinate acesses to the Matrices by the Block Threads **/
+    /** Synchronization point of execution in the Kernel to coordinate acesses to the Matrices by the Threads within the Block **/
     /** Exemple: Prevent compution in row 3 without compution in row 2 done **/
     __syncthreads();
   }
