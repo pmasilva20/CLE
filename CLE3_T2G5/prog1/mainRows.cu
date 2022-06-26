@@ -268,11 +268,14 @@ int main (int argc, char **argv)
  */
 static void computeDeterminantByRowsOnCPU(double* matricesHost, double* resultsDeterminantHost, int orderOfMatrices, int numberOfMatrices){
   
-  //For Each Matrix
+  /** For Each Matrix **/
   for(int idx = 0; idx < numberOfMatrices; idx++){
     
-    //Obtain Matrix ID
+    /** Obtain Matrix ID **/
     int matrixID = idx * orderOfMatrices * orderOfMatrices;
+
+    /** Inicialize the Matrix Determinant Result in Results Determinant Host **/
+    resultsDeterminantHost[idx] = 1;
     
     //Begin Gauss Elimination By Row
     for(int i = 0; i < orderOfMatrices-1; i++){
@@ -294,8 +297,6 @@ static void computeDeterminantByRowsOnCPU(double* matricesHost, double* resultsD
     }
 
     /** Obtain Matrix Determinant */
-    resultsDeterminantHost[idx] = 1;
-    
     for (int x = 0; x < orderOfMatrices; x++){
         resultsDeterminantHost[idx]*= matricesHost[matrixID + x*orderOfMatrices + x];
     }
@@ -315,45 +316,51 @@ __global__ void static computeDeterminantByRowsOnGPU(double* matricesDevice, dou
   /** Obtain Order of Matrices from Block Dimension x **/
   int orderOfMatrices = blockDim.x;
 	
-  // TODO:
-  for (int iter = 0; iter < orderOfMatrices; iter++) {
+  /** Row being Iterated */
+  int rowIterating;
 
-   // TODO:
-    if (threadIdx.x < iter){
+  /** Access/Obtain Matrix ID of the Block from Matrices Device **/
+  int matrixID = blockIdx.x * blockDim.x * blockDim.x;
+
+  /** Access/Obtain Row of the Matrix correspondent of the Block Thread **/
+  int rowBlockThreadID = matrixID + threadIdx.x * blockDim.x;
+
+  /** For the Rows of the Matrix to Iterate **/
+  for (rowIterating = 0; rowIterating < orderOfMatrices; rowIterating++) {
+
+   /** If row being being iterated is "above" the Row correspondent of the Block Thread then skip this Row **/
+    if (threadIdx.x < rowIterating){
+      /** Skip Current Interaction **/
        continue;
     } 
       
-    /** Obtain Matrix ID of the Block **/
-    int matrixID = blockIdx.x * blockDim.x * blockDim.x;
+    /** Access/Obtain Row being iterated of the Matrix **/		
+    int rowIteratingID = matrixID + rowIterating * blockDim.x;
 
-    /** Obtain Current Row of the Matrix of the Block Thread **/
-    int row = matrixID + threadIdx.x * blockDim.x;
+    /* If row being iterated correspondes to the row of the Block Thread */
+    if (threadIdx.x == rowIterating) {
 
-    /** Obtain Current element of the Row **/		
-    int iterRow = matrixID + iter * blockDim.x;
-
-    // TODO:
-    if (threadIdx.x == iter) {
-
-      // TODO:
-      if (iter == 0){
+      /* If row being Iterated is the first one of the Matrix, inicialize the Matrix Determinant Result in Results Determinant Device  */
+      if (rowIterating == 0){
         resultsDeterminantDevice[blockIdx.x] = 1;
       }
-      // TODO:
-      resultsDeterminantDevice[blockIdx.x] *= matricesDevice[iterRow + iter];
       
+      /** Update Value of the Determinant of the Matrix in Results Determinant Device **/
+      resultsDeterminantDevice[blockIdx.x] *= matricesDevice[rowIteratingID + rowIterating];
+      
+      /** Skip Current Interaction **/
       continue;
     }
 
     /** Obtain Pivot **/
-    double pivot = matricesDevice[iterRow + iter];
+    double pivot = matricesDevice[rowIteratingID + rowIterating];
 
     /** Obtain Term**/
-    double term = matricesDevice[row + iter] / pivot;
+    double term = matricesDevice[rowBlockThreadID + rowIterating] / pivot;
 
     /** "Elimination" By Row **/
-    for (int i = iter + 1; i < orderOfMatrices; i++) {
-      matricesDevice[row + i] -= matricesDevice[iterRow + i] * term; 
+    for (int i = rowIterating + 1; i < orderOfMatrices; i++) {
+      matricesDevice[rowBlockThreadID + i] -= matricesDevice[rowIteratingID + i] * term; 
     }
 
     /** Synchronization point of execution in the Kernel to coordinate acesses to the Matrices by the Block Threads **/

@@ -270,11 +270,14 @@ int main (int argc, char **argv)
  */
 static void computeDeterminantByColumnsOnCPU(double* matricesHost, double* resultsDeterminantHost, int orderOfMatrices, int numberOfMatrices){
   
-  //For Each Matrix
+  /** For Each Matrix **/
   for(int idx = 0; idx < numberOfMatrices; idx++){
     
-    //Obtain Matrix ID
+    /** Obtain Matrix ID **/
     int matrixID = idx * orderOfMatrices * orderOfMatrices;
+
+    /** Inicialize the Matrix Determinant Result in Results Determinant Host **/
+    resultsDeterminantHost[idx] = 1;
     
     //Begin Gauss Elimination By Column
     for(int i = 0; i < orderOfMatrices-1; i++){
@@ -296,8 +299,6 @@ static void computeDeterminantByColumnsOnCPU(double* matricesHost, double* resul
     }
 
     /** Obtain Matrix Determinant */
-    resultsDeterminantHost[idx] = 1;
-    
     for (int x = 0; x < orderOfMatrices; x++){
         resultsDeterminantHost[idx]*= matricesHost[matrixID + x*orderOfMatrices + x];
     }
@@ -319,44 +320,52 @@ __global__ void static computeDeterminantByColumnsOnGPU(double* matricesDevice, 
 
   /** Obtain Order of Matrices from Block Dimension x **/
   int orderOfMatrices = blockDim.x;
-	
-  //TODO:
-  for (int iter = 0; iter < orderOfMatrices; iter++) {
 
-   // TODO:
-    if (threadIdx.x < iter){
+  /** Access/Obtain Matrix ID of the Block from Matrices Device**/
+  int matrixID = blockIdx.x * orderOfMatrices * orderOfMatrices;
+
+  /** Column being Iterated */
+  int columnIterating;
+
+  /** Access/Obtain Column of the Matrix correspondent of the Block Thread**/
+  int columnBlockThreadID = matrixID + threadIdx.x;
+	
+  /** For the columns of the Matrix to Iterate **/
+  for (columnIterating = 0; columnIterating < orderOfMatrices; columnIterating++) {
+
+    /** If column being being iterated is "before" the column correspondent of the Block Thread then skip this column **/
+    if (threadIdx.x < columnIterating){
+      /** Skip Current Interaction **/
       continue;
     } 
+
+    /** Access/Obtain column being iterated of the Matrix **/		
+    int columnIteratingID = matrixID + columnIterating;
+
+    /* If column being iterated correspondes to the column of the Block Thread */
+    if (threadIdx.x == columnIterating) {
       
-    /** Obtain Matrix ID of the Block **/
-    int matrixID = blockIdx.x * orderOfMatrices * orderOfMatrices;
-
-    /** Obtain Current Column of the Matrix of the Block Thread **/
-    int col = matrixID + threadIdx.x;
-
-    /** Obtain Current element of the Column **/		
-    int iterCol = matrixID + iter;
-
-    // TODO:
-    if (threadIdx.x == iter) {
-      // TODO:
-      if (iter == 0){
+      /* If column being Iterated is the first one of the Matrix, inicialize the Matrix Determinant Result in Results Determinant Device  */
+      if (columnIterating == 0){
         resultsDeterminantDevice[blockIdx.x] = 1;
       }
-      // TODO:  
-      resultsDeterminantDevice[blockIdx.x] *= matricesDevice[iterCol + iter * orderOfMatrices];
+
+      /** Update Value of the Determinant of the Matrix in Results Determinant Device **/
+      resultsDeterminantDevice[blockIdx.x] *= matricesDevice[columnIteratingID + columnIterating * orderOfMatrices];
+      
+      /** Skip Current Interaction **/
       continue;
     }
 
     /** Obtain Pivot **/
-    double pivot = matricesDevice[iterCol + iter * orderOfMatrices];
+    double pivot = matricesDevice[columnIteratingID + columnIterating * orderOfMatrices];
 
     /** Obtain Term **/
-    double term = matricesDevice[col + iter * orderOfMatrices] / pivot;
+    double term = matricesDevice[columnBlockThreadID + columnIterating * orderOfMatrices] / pivot;
 
     /** "Elimination" By Column **/
-    for (int i = iter + 1; i < orderOfMatrices; i++) {
-      matricesDevice[col + i * orderOfMatrices] -= matricesDevice[iterCol + i * orderOfMatrices] * term; 
+    for (int i = columnIterating + 1; i < orderOfMatrices; i++) {
+      matricesDevice[columnBlockThreadID + i * orderOfMatrices] -= matricesDevice[columnIteratingID + i * orderOfMatrices] * term; 
     }
 
     /** Synchronization point of execution in the Kernel to coordinate acesses to the Matrices by the Block Threads **/
